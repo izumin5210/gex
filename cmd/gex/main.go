@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -13,16 +11,30 @@ import (
 
 	"github.com/izumin5210/gex/pkg/manifest"
 	"github.com/spf13/afero"
+	"github.com/spf13/pflag"
 )
 
 const (
 	manifestName = "tools.go"
 	binDirName   = "bin"
+	orgName      = "github.com/izumin5210"
+	cliName      = "gex"
+	version      = "v0.1.0"
 )
 
 var (
-	pkgToBeAdded = flag.String("add", "", "Add new tools")
+	pkgsToBeAdded []string
+	flagVersion   bool
+	flagVerbose   bool
+	flagHelp      bool
 )
+
+func init() {
+	pflag.StringArrayVar(&pkgsToBeAdded, "add", []string{}, "Add new tools")
+	pflag.BoolVar(&flagVersion, "version", false, "Print the CLI version")
+	pflag.BoolVarP(&flagVerbose, "verbose", "v", false, "Verbose level output")
+	pflag.BoolVarP(&flagHelp, "help", "h", false, "Help for the CLI")
+}
 
 func main() {
 	var exitCode int
@@ -42,6 +54,8 @@ type config struct {
 	workingDir   string
 	manifestName string
 	binDirName   string
+	pkgName      string
+	verbose      bool
 }
 
 func (c *config) ManifestPath() string {
@@ -53,41 +67,51 @@ func (c *config) BinDir() string {
 }
 
 func run() error {
-	var (
-		cfg = &config{
-			outW:         os.Stdout,
-			errW:         os.Stderr,
-			inR:          os.Stdin,
-			fs:           afero.NewOsFs(),
-			manifestName: manifestName,
-			binDirName:   binDirName,
-		}
-		ctx = context.TODO()
-		err error
-	)
-
-	cfg.workingDir, err = os.Getwd()
+	workingDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	flag.Parse()
-	args := flag.Args()
+	pflag.Parse()
+	args := pflag.Args()
+
+	cfg := &config{
+		outW:         os.Stdout,
+		errW:         os.Stderr,
+		inR:          os.Stdin,
+		fs:           afero.NewOsFs(),
+		workingDir:   workingDir,
+		manifestName: manifestName,
+		binDirName:   binDirName,
+		pkgName:      filepath.Join(orgName, cliName),
+		verbose:      flagVerbose,
+	}
+
+	ctx := context.TODO()
 
 	switch {
-	case *pkgToBeAdded != "":
-		err = addTool(ctx, *pkgToBeAdded, cfg)
+	case len(pkgsToBeAdded) > 0:
+		err = addTool(ctx, pkgsToBeAdded, cfg)
+	case flagVersion:
+		fmt.Fprintf(cfg.outW, "%s %s\n", cliName, version)
+	case flagHelp:
+		printHelp(cfg)
 	case len(args) > 0:
 		err = runTool(ctx, args[0], args[1:], cfg)
 	default:
-		err = errors.New("invalid arguments")
+		printHelp(cfg)
 	}
 
 	return err
 }
 
-func addTool(ctx context.Context, pkg string, cfg *config) (err error) {
-	cmd := exec.CommandContext(ctx, "go", "get", "-v", pkg)
+func addTool(ctx context.Context, pkgs []string, cfg *config) (err error) {
+	args := []string{"get"}
+	if cfg.verbose {
+		args = append(args, "-v")
+	}
+	args = append(args, pkgs...)
+	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Stdout = cfg.outW
 	cmd.Stderr = cfg.errW
 	cmd.Stdin = cfg.inR
@@ -102,8 +126,10 @@ func addTool(ctx context.Context, pkg string, cfg *config) (err error) {
 		m = manifest.NewManifest([]manifest.Tool{})
 	}
 
-	pkg = strings.SplitN(pkg, "@", 2)[0]
-	m.AddTool(manifest.Tool(pkg))
+	for _, pkg := range pkgs {
+		pkg = strings.SplitN(pkg, "@", 2)[0]
+		m.AddTool(manifest.Tool(pkg))
+	}
 
 	err = manifest.NewWriter(cfg.fs).Write(cfg.ManifestPath(), m)
 	if err != nil {
@@ -129,7 +155,12 @@ func runTool(ctx context.Context, name string, args []string, cfg *config) error
 
 	if st, err := cfg.fs.Stat(bin); err != nil {
 		// build
-		cmd := exec.CommandContext(ctx, "go", "build", "-v", "-o", bin, string(t))
+		args := []string{"build", "-o", bin}
+		if cfg.verbose {
+			args = append(args, "-v")
+		}
+		args = append(args, string(t))
+		cmd := exec.CommandContext(ctx, "go", args...)
 		cmd.Stdout = cfg.outW
 		cmd.Stderr = cfg.errW
 		cmd.Stdin = cfg.inR
@@ -148,3 +179,20 @@ func runTool(ctx context.Context, name string, args []string, cfg *config) error
 	cmd.Stdin = cfg.inR
 	return cmd.Run()
 }
+
+func printHelp(cfg *config) {
+	fmt.Fprintln(cfg.outW, helpText)
+	pflag.PrintDefaults()
+}
+
+var (
+	helpText = `The implementation of clarify best practice for tool dependencies.
+
+See https://github.com/golang/go/issues/25922#issuecomment-412992431
+
+Usage:
+  gex [command] [args]
+  gex --add [packages...]
+
+Flags:`
+)
