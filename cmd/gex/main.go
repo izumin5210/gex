@@ -30,6 +30,7 @@ var (
 )
 
 func init() {
+	pflag.SetInterspersed(false)
 	pflag.StringArrayVar(&pkgsToBeAdded, "add", []string{}, "Add new tools")
 	pflag.BoolVar(&flagVersion, "version", false, "Print the CLI version")
 	pflag.BoolVarP(&flagVerbose, "verbose", "v", false, "Verbose level output")
