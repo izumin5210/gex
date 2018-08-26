@@ -36,13 +36,13 @@ func (p *parserImpl) Parse(path string) (*Manifest, error) {
 		return nil, err
 	}
 
-	m := newManifest()
+	tools := make([]Tool, 0, len(f.Imports))
 
 	for _, s := range f.Imports {
 		if pkg, err := strconv.Unquote(s.Path.Value); err == nil {
-			m.addTool(Tool(pkg))
+			tools = append(tools, Tool(pkg))
 		}
 	}
 
-	return m, nil
+	return NewManifest(tools), nil
 }

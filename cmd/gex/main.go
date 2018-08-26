@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/izumin5210/gex/pkg/manifest"
 	"github.com/spf13/afero"
@@ -27,6 +28,7 @@ func main() {
 	var exitCode int
 
 	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		exitCode = 1
 	}
 
@@ -74,14 +76,41 @@ func run() error {
 
 	switch {
 	case *pkgToBeAdded != "":
-		// TODO: not yet implemented.
+		err = addTool(ctx, *pkgToBeAdded, cfg)
 	case len(args) > 0:
-		runTool(ctx, args[0], args[1:], cfg)
+		err = runTool(ctx, args[0], args[1:], cfg)
 	default:
 		err = errors.New("invalid arguments")
 	}
 
 	return err
+}
+
+func addTool(ctx context.Context, pkg string, cfg *config) (err error) {
+	cmd := exec.CommandContext(ctx, "go", "get", "-v", pkg)
+	cmd.Stdout = cfg.outW
+	cmd.Stderr = cfg.errW
+	cmd.Stdin = cfg.inR
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	p := manifest.NewParser(cfg.fs)
+	m, err := p.Parse(cfg.ManifestPath())
+	if err != nil {
+		m = manifest.NewManifest([]manifest.Tool{})
+	}
+
+	pkg = strings.SplitN(pkg, "@", 2)[0]
+	m.AddTool(manifest.Tool(pkg))
+
+	err = manifest.NewWriter(cfg.fs).Write(cfg.ManifestPath(), m)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func runTool(ctx context.Context, name string, args []string, cfg *config) error {

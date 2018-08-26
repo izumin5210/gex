@@ -10,8 +10,18 @@ type Manifest struct {
 	toolMap map[string]Tool
 }
 
-func newManifest() *Manifest {
-	return &Manifest{toolMap: make(map[string]Tool)}
+// NewManifest creates a new Manifest instance.
+func NewManifest(tools []Tool) *Manifest {
+	toolMap := make(map[string]Tool, len(tools))
+	for _, t := range tools {
+		toolMap[t.Name()] = t
+	}
+	return &Manifest{toolMap: toolMap}
+}
+
+// AddTool adds a new tool to the manifest.
+func (m *Manifest) AddTool(tool Tool) {
+	m.toolMap[tool.Name()] = tool
 }
 
 // FindTool returns a tool by a name.
