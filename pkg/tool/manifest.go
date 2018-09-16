@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"path/filepath"
 	"sort"
 )
 
@@ -47,12 +46,4 @@ func (m *Manifest) Tools() []Tool {
 
 func (m *Manifest) addTool(t Tool) {
 	m.toolMap[t.Name()] = t
-}
-
-// Tool represents a go package of a tool dependency.
-type Tool string
-
-// Name returns an executable name.
-func (t Tool) Name() string {
-	return filepath.Base(string(t))
 }
