@@ -13,7 +13,8 @@ import (
 // Repository is an interface for managing and operating tools
 type Repository interface {
 	Add(ctx context.Context, pkgs ...string) error
-	Build(ctx context.Context, name string, pkg string) (string, error)
+	Build(ctx context.Context, t Tool) (string, error)
+	BuildAll(ctx context.Context) error
 	Run(ctx context.Context, name string, args ...string) error
 }
 
@@ -54,7 +55,12 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 
 	for _, pkg := range pkgs {
 		pkg = strings.SplitN(pkg, "@", 2)[0]
-		m.AddTool(Tool(pkg))
+		t := Tool(pkg)
+		m.AddTool(t)
+		_, err = r.Build(ctx, t)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = r.writer.Write(r.ManifestPath(), m)
@@ -65,24 +71,40 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 	return nil
 }
 
-func (r *repositoryImpl) Build(ctx context.Context, bin, pkg string) (string, error) {
-	binPath := r.BinPath(bin)
+func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
+	binPath := r.BinPath(t.Name())
 
 	if st, err := r.fs.Stat(binPath); err != nil {
 		args := []string{"build", "-o", binPath}
 		if r.Verbose {
 			args = append(args, "-v")
 		}
-		args = append(args, pkg)
+		args = append(args, string(t))
 		err := r.executor.Exec(ctx, "go", args...)
 		if err != nil {
 			return "", err
 		}
 	} else if st.IsDir() {
-		return "", fmt.Errorf("%q is a directory", bin)
+		return "", fmt.Errorf("%q is a directory", t.Name())
 	}
 
 	return binPath, nil
+}
+
+func (r *repositoryImpl) BuildAll(ctx context.Context) error {
+	m, err := r.parser.Parse(r.ManifestPath())
+	if err != nil {
+		return err
+	}
+
+	for _, t := range m.Tools() {
+		_, err = r.Build(ctx, t)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) error {
@@ -96,7 +118,7 @@ func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) e
 		return fmt.Errorf("failed to find the tool %q", name)
 	}
 
-	bin, err := r.Build(ctx, name, string(t))
+	bin, err := r.Build(ctx, t)
 	if err != nil {
 		return err
 	}

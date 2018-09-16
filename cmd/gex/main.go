@@ -23,6 +23,7 @@ const (
 
 var (
 	pkgsToBeAdded []string
+	flagBuild     bool
 	flagVersion   bool
 	flagVerbose   bool
 	flagHelp      bool
@@ -31,6 +32,7 @@ var (
 func init() {
 	pflag.SetInterspersed(false)
 	pflag.StringArrayVar(&pkgsToBeAdded, "add", []string{}, "Add new tools")
+	pflag.BoolVar(&flagBuild, "build", false, "Build all tools")
 	pflag.BoolVar(&flagVersion, "version", false, "Print the CLI version")
 	pflag.BoolVarP(&flagVerbose, "verbose", "v", false, "Verbose level output")
 	pflag.BoolVarP(&flagHelp, "help", "h", false, "Help for the CLI")
@@ -72,6 +74,8 @@ func run() error {
 		fmt.Fprintf(os.Stdout, "%s %s\n", cliName, version)
 	case flagHelp:
 		printHelp(os.Stdout)
+	case flagBuild:
+		err = toolRepo.BuildAll(ctx)
 	case len(args) > 0:
 		err = toolRepo.Run(ctx, args[0], args[1:]...)
 	default:
