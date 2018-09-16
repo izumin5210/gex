@@ -1,4 +1,4 @@
-package manifest_test
+package tool_test
 
 import (
 	"testing"
@@ -6,14 +6,14 @@ import (
 	"github.com/bradleyjkemp/cupaloy"
 	"github.com/spf13/afero"
 
-	"github.com/izumin5210/gex/pkg/manifest"
+	"github.com/izumin5210/gex/pkg/tool"
 )
 
 func TestWriter_Write(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writer := manifest.NewWriter(fs)
+	writer := tool.NewWriter(fs)
 
-	in := manifest.NewManifest([]manifest.Tool{
+	in := tool.NewManifest([]tool.Tool{
 		"github.com/gogo/protobuf/protoc-gen-gogofast",
 		"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
 		"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger",

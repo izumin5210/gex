@@ -1,4 +1,4 @@
-package manifest
+package tool
 
 import (
 	"go/parser"

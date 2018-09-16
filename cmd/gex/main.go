@@ -9,9 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/izumin5210/gex/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
+
+	"github.com/izumin5210/gex/pkg/tool"
 )
 
 const (
@@ -121,18 +122,18 @@ func addTool(ctx context.Context, pkgs []string, cfg *config) (err error) {
 		return err
 	}
 
-	p := manifest.NewParser(cfg.fs)
+	p := tool.NewParser(cfg.fs)
 	m, err := p.Parse(cfg.ManifestPath())
 	if err != nil {
-		m = manifest.NewManifest([]manifest.Tool{})
+		m = tool.NewManifest([]tool.Tool{})
 	}
 
 	for _, pkg := range pkgs {
 		pkg = strings.SplitN(pkg, "@", 2)[0]
-		m.AddTool(manifest.Tool(pkg))
+		m.AddTool(tool.Tool(pkg))
 	}
 
-	err = manifest.NewWriter(cfg.fs).Write(cfg.ManifestPath(), m)
+	err = tool.NewWriter(cfg.fs).Write(cfg.ManifestPath(), m)
 	if err != nil {
 		return err
 	}
@@ -141,7 +142,7 @@ func addTool(ctx context.Context, pkgs []string, cfg *config) (err error) {
 }
 
 func runTool(ctx context.Context, name string, args []string, cfg *config) error {
-	p := manifest.NewParser(cfg.fs)
+	p := tool.NewParser(cfg.fs)
 	m, err := p.Parse(cfg.ManifestPath())
 	if err != nil {
 		return err
