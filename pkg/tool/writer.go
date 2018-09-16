@@ -1,4 +1,4 @@
-package manifest
+package tool
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-// Writer creates a manifest file to manage tool dependencies.
+// Writer creates a tool file to manage tool dependencies.
 type Writer interface {
 	Write(path string, m *Manifest) error
 }

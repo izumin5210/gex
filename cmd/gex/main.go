@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
-	"github.com/izumin5210/gex/pkg/manifest"
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
+
+	"github.com/izumin5210/gex/pkg/command"
+	"github.com/izumin5210/gex/pkg/tool"
 )
 
 const (
@@ -48,25 +47,6 @@ func main() {
 	os.Exit(exitCode)
 }
 
-type config struct {
-	outW, errW   io.Writer
-	inR          io.Reader
-	fs           afero.Fs
-	workingDir   string
-	manifestName string
-	binDirName   string
-	pkgName      string
-	verbose      bool
-}
-
-func (c *config) ManifestPath() string {
-	return filepath.Join(c.workingDir, c.manifestName)
-}
-
-func (c *config) BinDir() string {
-	return filepath.Join(c.workingDir, c.binDirName)
-}
-
 func run() error {
 	workingDir, err := os.Getwd()
 	if err != nil {
@@ -76,113 +56,33 @@ func run() error {
 	pflag.Parse()
 	args := pflag.Args()
 
-	cfg := &config{
-		outW:         os.Stdout,
-		errW:         os.Stderr,
-		inR:          os.Stdin,
-		fs:           afero.NewOsFs(),
-		workingDir:   workingDir,
-		manifestName: manifestName,
-		binDirName:   binDirName,
-		pkgName:      filepath.Join(orgName, cliName),
-		verbose:      flagVerbose,
-	}
-
 	ctx := context.TODO()
+	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin)
+	toolRepo := tool.NewRepository(afero.NewOsFs(), cmdExecutor, &tool.Config{
+		WorkingDir:   workingDir,
+		ManifestName: manifestName,
+		BinDirName:   binDirName,
+		Verbose:      flagVerbose,
+	})
 
 	switch {
 	case len(pkgsToBeAdded) > 0:
-		err = addTool(ctx, pkgsToBeAdded, cfg)
+		err = toolRepo.Add(ctx, pkgsToBeAdded...)
 	case flagVersion:
-		fmt.Fprintf(cfg.outW, "%s %s\n", cliName, version)
+		fmt.Fprintf(os.Stdout, "%s %s\n", cliName, version)
 	case flagHelp:
-		printHelp(cfg)
+		printHelp(os.Stdout)
 	case len(args) > 0:
-		err = runTool(ctx, args[0], args[1:], cfg)
+		err = toolRepo.Run(ctx, args[0], args[1:]...)
 	default:
-		printHelp(cfg)
+		printHelp(os.Stdout)
 	}
 
 	return err
 }
 
-func addTool(ctx context.Context, pkgs []string, cfg *config) (err error) {
-	args := []string{"get"}
-	if cfg.verbose {
-		args = append(args, "-v")
-	}
-	args = append(args, pkgs...)
-	cmd := exec.CommandContext(ctx, "go", args...)
-	cmd.Stdout = cfg.outW
-	cmd.Stderr = cfg.errW
-	cmd.Stdin = cfg.inR
-	err = cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	p := manifest.NewParser(cfg.fs)
-	m, err := p.Parse(cfg.ManifestPath())
-	if err != nil {
-		m = manifest.NewManifest([]manifest.Tool{})
-	}
-
-	for _, pkg := range pkgs {
-		pkg = strings.SplitN(pkg, "@", 2)[0]
-		m.AddTool(manifest.Tool(pkg))
-	}
-
-	err = manifest.NewWriter(cfg.fs).Write(cfg.ManifestPath(), m)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runTool(ctx context.Context, name string, args []string, cfg *config) error {
-	p := manifest.NewParser(cfg.fs)
-	m, err := p.Parse(cfg.ManifestPath())
-	if err != nil {
-		return err
-	}
-
-	t, ok := m.FindTool(name)
-	if !ok {
-		return fmt.Errorf("failed to find the tool %q", name)
-	}
-
-	bin := filepath.Join(cfg.BinDir(), name)
-
-	if st, err := cfg.fs.Stat(bin); err != nil {
-		// build
-		args := []string{"build", "-o", bin}
-		if cfg.verbose {
-			args = append(args, "-v")
-		}
-		args = append(args, string(t))
-		cmd := exec.CommandContext(ctx, "go", args...)
-		cmd.Stdout = cfg.outW
-		cmd.Stderr = cfg.errW
-		cmd.Stdin = cfg.inR
-		err = cmd.Run()
-		if err != nil {
-			return err
-		}
-	} else if st.IsDir() {
-		return fmt.Errorf("%q is a directory", bin)
-	}
-
-	// exec
-	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Stdout = cfg.outW
-	cmd.Stderr = cfg.errW
-	cmd.Stdin = cfg.inR
-	return cmd.Run()
-}
-
-func printHelp(cfg *config) {
-	fmt.Fprintln(cfg.outW, helpText)
+func printHelp(w io.Writer) {
+	fmt.Fprintln(w, helpText)
 	pflag.PrintDefaults()
 }
 
