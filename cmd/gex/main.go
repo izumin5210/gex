@@ -1,15 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
 
 	"github.com/izumin5210/gex/pkg/command"
+	"github.com/izumin5210/gex/pkg/command/dep"
 	"github.com/izumin5210/gex/pkg/command/mod"
 	"github.com/izumin5210/gex/pkg/tool"
 )
@@ -60,13 +64,25 @@ func run() error {
 	args := pflag.Args()
 
 	ctx := context.TODO()
+	fs := afero.NewOsFs()
 	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin)
 	var (
 		builder command.Builder
 		adder   command.Adder
 	)
-	builder = mod.NewBuilder(cmdExecutor)
-	adder = mod.NewAdder(cmdExecutor)
+
+	switch detectMode(ctx, fs) {
+	case modeModules:
+		builder = mod.NewBuilder(cmdExecutor)
+		adder = mod.NewAdder(cmdExecutor)
+	case modeDep:
+		builder = dep.NewBuilder(cmdExecutor)
+		adder = dep.NewAdder(cmdExecutor)
+	default:
+		printHelp(os.Stdout)
+		return errors.New("failed to detect a dependencies management tool")
+	}
+
 	toolRepo := tool.NewRepository(afero.NewOsFs(), cmdExecutor, builder, adder, &tool.Config{
 		WorkingDir:   workingDir,
 		ManifestName: manifestName,
@@ -90,6 +106,26 @@ func run() error {
 	}
 
 	return err
+}
+
+type mode int
+
+const (
+	modeUnknown mode = iota
+	modeModules
+	modeDep
+)
+
+func detectMode(ctx context.Context, fs afero.Fs) mode {
+	out, err := exec.CommandContext(ctx, "go", "env", "GOMOD").Output()
+	if err == nil && len(bytes.TrimRight(out, "\n")) > 0 {
+		return modeModules
+	}
+	st, err := fs.Stat("Gopkg.toml")
+	if err == nil && !st.IsDir() {
+		return modeDep
+	}
+	return modeUnknown
 }
 
 func printHelp(w io.Writer) {
