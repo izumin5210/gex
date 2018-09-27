@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/izumin5210/gex/pkg/command"
+	"github.com/izumin5210/gex/pkg/command/mod"
 	"github.com/izumin5210/gex/pkg/tool"
 )
 
@@ -60,7 +61,13 @@ func run() error {
 
 	ctx := context.TODO()
 	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin)
-	toolRepo := tool.NewRepository(afero.NewOsFs(), cmdExecutor, &tool.Config{
+	var (
+		builder command.Builder
+		adder   command.Adder
+	)
+	builder = mod.NewBuilder(cmdExecutor)
+	adder = mod.NewAdder(cmdExecutor)
+	toolRepo := tool.NewRepository(afero.NewOsFs(), cmdExecutor, builder, adder, &tool.Config{
 		WorkingDir:   workingDir,
 		ManifestName: manifestName,
 		BinDirName:   binDirName,

@@ -24,26 +24,25 @@ type repositoryImpl struct {
 	parser   Parser
 	writer   Writer
 	executor command.Executor
+	builder  command.Builder
+	adder    command.Adder
 }
 
 // NewRepository creates a new Repository instance.
-func NewRepository(fs afero.Fs, executor command.Executor, cfg *Config) Repository {
+func NewRepository(fs afero.Fs, executor command.Executor, builder command.Builder, adder command.Adder, cfg *Config) Repository {
 	return &repositoryImpl{
 		Config:   cfg,
 		fs:       fs,
 		parser:   NewParser(fs),
 		writer:   NewWriter(fs),
 		executor: executor,
+		builder:  builder,
+		adder:    adder,
 	}
 }
 
 func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
-	args := []string{"get"}
-	if r.Verbose {
-		args = append(args, "-v")
-	}
-	args = append(args, pkgs...)
-	err := r.executor.Exec(ctx, "go", args...)
+	err := r.adder.Add(ctx, pkgs, r.Verbose)
 	if err != nil {
 		return err
 	}
@@ -75,12 +74,7 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 	binPath := r.BinPath(t.Name())
 
 	if st, err := r.fs.Stat(binPath); err != nil {
-		args := []string{"build", "-o", binPath}
-		if r.Verbose {
-			args = append(args, "-v")
-		}
-		args = append(args, string(t))
-		err := r.executor.Exec(ctx, "go", args...)
+		err := r.builder.Build(ctx, binPath, string(t), r.Verbose)
 		if err != nil {
 			return "", err
 		}
