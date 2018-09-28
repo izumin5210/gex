@@ -65,7 +65,7 @@ func run() error {
 
 	ctx := context.TODO()
 	fs := afero.NewOsFs()
-	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin)
+	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin, workingDir)
 	var (
 		builder command.Builder
 		adder   command.Adder
