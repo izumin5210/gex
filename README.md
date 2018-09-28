@@ -25,7 +25,7 @@ Add a new tool to dependencies:
 $ gex --add github.com/golang/mock/mockgen
 ```
 
-The tool will be managed in `tools.go` and its version will be managed by [Go Modules](https://github.com/golang/go/wiki/Modules).
+The tool will be managed in `tools.go` and its version will be managed by [Modules](https://github.com/golang/go/wiki/Modules) or [dep](https://golang.github.io/dep/).
 
 ```
 $ cat tools.go
