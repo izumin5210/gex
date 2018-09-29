@@ -3,6 +3,8 @@ package dep
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/izumin5210/gex/pkg/command"
 )
 
@@ -24,5 +26,5 @@ func (a *adderImpl) Add(ctx context.Context, pkgs []string, verbose bool) error 
 	}
 	args = append(args, "-add")
 	args = append(args, pkgs...)
-	return a.executor.Exec(ctx, "dep", args...)
+	return errors.WithStack(a.executor.Exec(ctx, "dep", args...))
 }

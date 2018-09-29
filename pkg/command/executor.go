@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Executor is an interface for executing commands.
@@ -55,5 +57,5 @@ func (e *executorImpl) Exec(ctx context.Context, name string, args ...string) er
 	if e.verbose {
 		e.log.Printf("    + %s\n", strings.Join(append([]string{name}, args...), " "))
 	}
-	return cmd.Run()
+	return errors.WithStack(cmd.Run())
 }

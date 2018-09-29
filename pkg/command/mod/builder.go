@@ -3,6 +3,8 @@ package mod
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/izumin5210/gex/pkg/command"
 )
 
@@ -23,5 +25,5 @@ func (b *builderImpl) Build(ctx context.Context, binPath, pkg string, verbose bo
 		args = append(args, "-v")
 	}
 	args = append(args, pkg)
-	return b.executor.Exec(ctx, "go", args...)
+	return errors.WithStack(b.executor.Exec(ctx, "go", args...))
 }

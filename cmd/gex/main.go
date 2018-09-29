@@ -3,13 +3,13 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
 
@@ -58,7 +58,7 @@ func main() {
 func run() error {
 	workingDir, err := os.Getwd()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get the working directory")
 	}
 
 	pflag.Parse()
@@ -108,7 +108,7 @@ func run() error {
 		printHelp(os.Stdout)
 	}
 
-	return err
+	return errors.WithStack(err)
 }
 
 type mode int
