@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,7 +16,7 @@ type Executor interface {
 }
 
 // NewExecutor creates a new Executor instance.
-func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string) Executor {
+func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, log *log.Logger) Executor {
 	env := os.Environ()
 	for _, e := range env {
 		kv := strings.SplitN(e, "=", 2)
@@ -25,11 +26,13 @@ func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string) Executor {
 		env = append(env, strings.Join(kv, "="))
 	}
 	return &executorImpl{
-		outW: outW,
-		errW: errW,
-		inR:  inR,
-		cwd:  cwd,
-		env:  env,
+		outW:    outW,
+		errW:    errW,
+		inR:     inR,
+		cwd:     cwd,
+		env:     env,
+		verbose: verbose,
+		log:     log,
 	}
 }
 
@@ -38,6 +41,8 @@ type executorImpl struct {
 	inR        io.Reader
 	cwd        string
 	env        []string
+	verbose    bool
+	log        *log.Logger
 }
 
 func (e *executorImpl) Exec(ctx context.Context, name string, args ...string) error {
@@ -47,5 +52,8 @@ func (e *executorImpl) Exec(ctx context.Context, name string, args ...string) er
 	cmd.Stdin = e.inR
 	cmd.Dir = e.cwd
 	cmd.Env = e.env
+	if e.verbose {
+		e.log.Printf("    + %s\n", strings.Join(append([]string{name}, args...), " "))
+	}
 	return cmd.Run()
 }
