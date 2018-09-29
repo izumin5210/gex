@@ -1,4 +1,5 @@
 # gex
+[![Build Status](https://travis-ci.com/izumin5210/gex.svg?branch=master)](https://travis-ci.com/izumin5210/gex)
 [![Go project version](https://badge.fury.io/go/github.com%2Fizumin5210%2Fgex.svg)](https://badge.fury.io/go/github.com%2Fizumin5210%2Fgex)
 [![Go Report Card](https://goreportcard.com/badge/github.com/izumin5210/gex)](https://goreportcard.com/report/github.com/izumin5210/gex)
 [![License](https://img.shields.io/github/license/izumin5210/gex.svg)](./LICENSE)
@@ -52,4 +53,12 @@ Execute command that managed in `tools.go` and `go.mod`.
 ```
 $ gex mockgen
 # prints mockgen's help text...
+```
+
+
+### `gex --build`
+Build executable binaries into `$PWD/bin`.
+
+```
+$ gex --build
 ```
