@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 
@@ -64,8 +65,9 @@ func run() error {
 	args := pflag.Args()
 
 	ctx := context.TODO()
+	logger := log.New(os.Stdout, "", 0)
 	fs := afero.NewOsFs()
-	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin, workingDir)
+	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin, workingDir, flagVerbose, logger)
 	var (
 		builder command.Builder
 		adder   command.Adder
@@ -88,6 +90,7 @@ func run() error {
 		ManifestName: manifestName,
 		BinDirName:   binDirName,
 		Verbose:      flagVerbose,
+		Log:          logger,
 	})
 
 	switch {

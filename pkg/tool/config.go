@@ -1,12 +1,16 @@
 package tool
 
-import "path/filepath"
+import (
+	"log"
+	"path/filepath"
+)
 
 type Config struct {
 	WorkingDir   string
 	ManifestName string
 	BinDirName   string
 	Verbose      bool
+	Log          *log.Logger
 }
 
 func (c *Config) ManifestPath() string {
