@@ -15,8 +15,9 @@ type Executor interface {
 	Exec(ctx context.Context, name string, args ...string) error
 }
 
-// NewExecutor creates a new Executor instance.
-func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, log *log.Logger) Executor {
+func NewExecutor(
+	outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, log *log.Logger,
+) Executor {
 	env := os.Environ()
 	for _, e := range env {
 		kv := strings.SplitN(e, "=", 2)
@@ -55,5 +56,6 @@ func (e *executorImpl) Exec(ctx context.Context, name string, args ...string) er
 	if e.verbose {
 		e.log.Printf("    + %s\n", strings.Join(append([]string{name}, args...), " "))
 	}
-	return cmd.Run()
+	err := cmd.Run()
+	return err
 }
