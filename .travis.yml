@@ -1,0 +1,26 @@
+language: go
+
+go: '1.11'
+
+env:
+  global:
+  - GO111MODULE=on
+
+  # REVIEWDOG_GITHUB_API_TOKEN
+  - secure: "Q3fwfSlAIQ7preNykZ0l4SY0BMx6TGdORBmX/KT/sR3liyRao4KQYHTSIhkHxyVo+9G5d1dF/qmNZBrLZlfc5vFxD1V5mxY89phDrKd0ZYRc3GrrMjYGH58/lqNpg1nW4QeE6gZ+IBFS5IQ0SBqcLbK7ZpTPFRf60CtXpJ5R04S784A+J7KzEEXu9clpO1Xt/bSmLMOkM5KoQFq45vMHNN7d0FRXvlr+nbsForBytkjhym+tA+qTzJUdtpYVXACphv0IiRuv7aHivLrwcAnQm1dOO7ZjEsDeoax6sPjYZmaPc5W9I7wOMER7nBZEBalAotEauq9ZxaxH1LWzdcfc+o2aAbmIBZcS4pj1LqVKZlIfYnj29k6REtdIPXpYerKR3kKbSV9VtBIs02wPZ5LLqe10xeIHlzJ5rsf6/uvw6Nu+sAVizVY+dkHyoRChUxHW1PVenNRi8OA12tBaUuS/RhuKNPz3FQq6g2S4JU2c9A8/VCLa5tniRTBV3mrTua/Hl0mX3/PccXY1VMqcBvjaLFNtdBWn7hw9pVjfnaLaM2XDRyC2pQ3nDpJZDfAfm0oDJ1WdCCsVEwL3UFqyupyiGsEvG7UaiPyZ//y+VTDag8q7CuUxQ8LYzef953SzHLWl3xDn7Lrx3UQ4z/0VSL4gDc3ckUvy1m4jI2UGKr3d5aI="
+
+cache:
+  directories:
+  - $GOPATH/pkg/mod
+
+jobs:
+  include:
+  - name: 'lint'
+    before_script:
+    - go get github.com/izumin5210/gex/cmd/gex
+    - gex --build
+    script: gex reviewdog -reporter=github-pr-review
+    if: type = 'pull_request'
+
+  - name: 'test'
+    if: type != 'pull_request'
