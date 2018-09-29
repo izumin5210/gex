@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
 
@@ -27,11 +28,11 @@ func (w *writerImpl) Write(path string, m *Manifest) error {
 	buf := new(bytes.Buffer)
 	err := toolsGoTemplate.Execute(buf, m)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create a manifest file")
 	}
 	err = afero.WriteFile(w.fs, path, buf.Bytes(), 0644)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to write a manifest file")
 	}
 	return nil
 }

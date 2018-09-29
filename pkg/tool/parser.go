@@ -5,6 +5,7 @@ import (
 	"go/token"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
 
@@ -27,13 +28,13 @@ type parserImpl struct {
 func (p *parserImpl) Parse(path string) (*Manifest, error) {
 	data, err := afero.ReadFile(p.fs, path)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to read %q", path)
 	}
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "", string(data), parser.ImportsOnly)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to parse %q", path)
 	}
 
 	tools := make([]Tool, 0, len(f.Imports))

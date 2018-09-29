@@ -2,9 +2,9 @@ package tool
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/izumin5210/gex/pkg/command"
@@ -47,7 +47,7 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 	}
 	err := r.adder.Add(ctx, pkgs, r.Verbose)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to add tools")
 	}
 
 	m, err := r.parser.Parse(r.ManifestPath())
@@ -61,13 +61,13 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 		m.AddTool(t)
 		_, err = r.Build(ctx, t)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 
 	err = r.writer.Write(r.ManifestPath(), m)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to write a manifest file")
 	}
 
 	return nil
@@ -82,10 +82,10 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 		}
 		err := r.builder.Build(ctx, binPath, string(t), r.Verbose)
 		if err != nil {
-			return "", err
+			return "", errors.Wrapf(err, "failed to build %s", t)
 		}
 	} else if st.IsDir() {
-		return "", fmt.Errorf("%q is a directory", t.Name())
+		return "", errors.Errorf("%q is a directory", t.Name())
 	}
 
 	return binPath, nil
@@ -94,13 +94,13 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 func (r *repositoryImpl) BuildAll(ctx context.Context) error {
 	m, err := r.parser.Parse(r.ManifestPath())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to parse the manifest file")
 	}
 
 	for _, t := range m.Tools() {
 		_, err = r.Build(ctx, t)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 
@@ -110,18 +110,18 @@ func (r *repositoryImpl) BuildAll(ctx context.Context) error {
 func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) error {
 	m, err := r.parser.Parse(r.ManifestPath())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to parse the manifest file")
 	}
 
 	t, ok := m.FindTool(name)
 	if !ok {
-		return fmt.Errorf("failed to find the tool %q", name)
+		return errors.Errorf("failed to find the tool %q", name)
 	}
 
 	bin, err := r.Build(ctx, t)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
-	return r.executor.Exec(ctx, bin, args...)
+	return errors.WithStack(r.executor.Exec(ctx, bin, args...))
 }
