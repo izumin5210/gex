@@ -53,3 +53,11 @@ Execute command that managed in `tools.go` and `go.mod`.
 $ gex mockgen
 # prints mockgen's help text...
 ```
+
+
+### `gex --build`
+Build executable binaries into `$PWD/bin`.
+
+```
+$ gex --build
+```
