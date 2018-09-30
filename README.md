@@ -1,4 +1,5 @@
 # gex
+
 [![Build Status](https://travis-ci.com/izumin5210/gex.svg?branch=master)](https://travis-ci.com/izumin5210/gex)
 [![Go project version](https://badge.fury.io/go/github.com%2Fizumin5210%2Fgex.svg)](https://badge.fury.io/go/github.com%2Fizumin5210%2Fgex)
 [![Go Report Card](https://goreportcard.com/badge/github.com/izumin5210/gex)](https://goreportcard.com/report/github.com/izumin5210/gex)
@@ -7,6 +8,14 @@
 The implementation of clarify best practice for tool dependencies.
 
 See https://github.com/golang/go/issues/25922#issuecomment-412992431
+
+
+## Features
+
+- Manage versions of tools dependencies, and build them with specified version
+- **Does not introduce new mechanisms** to manage tool dependencies
+- **Only 2 commands** that you use: `--add` and `--build`
+
 
 
 ## Installation
@@ -46,6 +55,14 @@ $ cat go.mod | grep mock
 ```
 
 
+### `gex --build`
+Build executable binaries into `$PWD/bin`.
+
+```
+$ gex --build
+```
+
+
 ### `gex [command] [args...]`
 Execute command that managed in `tools.go` and `go.mod`.
 `gex` will build the executable binary automatically if needed.
@@ -53,12 +70,4 @@ Execute command that managed in `tools.go` and `go.mod`.
 ```
 $ gex mockgen
 # prints mockgen's help text...
-```
-
-
-### `gex --build`
-Build executable binaries into `$PWD/bin`.
-
-```
-$ gex --build
 ```
