@@ -17,15 +17,6 @@ See https://github.com/golang/go/issues/25922#issuecomment-412992431
 - **Only 2 commands** that you use: `--add` and `--build`
 
 
-
-## Installation
-To install gex, you can use `go get`.
-
-```
-$ go get github.com/izumin5210/gex/cmd/gex
-```
-
-
 ## Usage
 
 ### `gex --add [packages...]`
@@ -71,3 +62,16 @@ Execute command that managed in `tools.go` and `go.mod`.
 $ gex mockgen
 # prints mockgen's help text...
 ```
+
+
+## Installation
+To install gex, you can use `go get`.
+
+```
+$ go get github.com/izumin5210/gex/cmd/gex
+```
+
+
+## Requirement
+
+gex depends on [dep](https://golang.github.io/dep/) or [Modules](https://github.com/golang/go/wiki/Modules) to manage tool dependencies,
