@@ -24,7 +24,7 @@ const (
 	binDirName   = "bin"
 	orgName      = "github.com/izumin5210"
 	cliName      = "gex"
-	version      = "v0.3.0"
+	version      = "v0.3.1"
 )
 
 var (
