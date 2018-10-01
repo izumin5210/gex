@@ -72,6 +72,6 @@ $ go get github.com/izumin5210/gex/cmd/gex
 ```
 
 
-## Requirement
+## Requirements
 
 gex depends on [dep](https://golang.github.io/dep/) or [Modules](https://github.com/golang/go/wiki/Modules) to manage tool dependencies,
