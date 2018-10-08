@@ -33,7 +33,7 @@ type Config struct {
 	mode Mode
 }
 
-// Defualt contains default configuration.
+// Default contains default configuration.
 var Default = createDefaultConfig()
 
 func createDefaultConfig() *Config {
