@@ -29,6 +29,8 @@ type Config struct {
 
 	Verbose bool
 	Logger  *log.Logger
+
+	mode Mode
 }
 
 // Defualt contains default configuration.
@@ -109,11 +111,11 @@ func (c *Config) createManager() (
 		adder   manager.Adder
 	)
 
-	switch c.detectMode() {
-	case modeModules:
+	switch c.DetectMode() {
+	case ModeModules:
 		builder = mod.NewBuilder(executor)
 		adder = mod.NewAdder(executor)
-	case modeDep:
+	case ModeDep:
 		builder = dep.NewBuilder(executor)
 		adder = dep.NewAdder(executor)
 	default:
@@ -131,22 +133,36 @@ func (c *Config) createManager() (
 	}, nil
 }
 
-type mode int
+// Mode represents the dependencies management tool that is used.
+type Mode int
 
+// Mode values
 const (
-	modeUnknown mode = iota
-	modeModules
-	modeDep
+	ModeUnknown Mode = iota
+	ModeModules
+	ModeDep
 )
 
-func (c *Config) detectMode() mode {
+// DetectMode returns a current Mode.
+func (c *Config) DetectMode() (m Mode) {
+	if c.mode != ModeUnknown {
+		m = c.mode
+		return
+	}
+
+	defer func() { c.mode = m }()
+
 	out, err := exec.Command("go", "env", "GOMOD").Output()
 	if err == nil && len(bytes.TrimRight(out, "\n")) > 0 {
-		return modeModules
+		m = ModeModules
+		return
 	}
+
 	st, err := c.FS.Stat("Gopkg.toml")
 	if err == nil && !st.IsDir() {
-		return modeDep
+		m = ModeDep
+		return
 	}
-	return modeUnknown
+
+	return
 }
