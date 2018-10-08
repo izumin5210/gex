@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
-	"github.com/izumin5210/gex/pkg/command"
+	"github.com/izumin5210/gex/pkg/manager"
 )
 
 // Repository is an interface for managing and operating tools
@@ -23,13 +23,13 @@ type repositoryImpl struct {
 	fs       afero.Fs
 	parser   Parser
 	writer   Writer
-	executor command.Executor
-	builder  command.Builder
-	adder    command.Adder
+	executor manager.Executor
+	builder  manager.Builder
+	adder    manager.Adder
 }
 
 // NewRepository creates a new Repository instance.
-func NewRepository(fs afero.Fs, executor command.Executor, builder command.Builder, adder command.Adder, cfg *Config) Repository {
+func NewRepository(fs afero.Fs, executor manager.Executor, builder manager.Builder, adder manager.Adder, cfg *Config) Repository {
 	return &repositoryImpl{
 		Config:   cfg,
 		fs:       fs,
