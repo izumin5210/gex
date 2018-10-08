@@ -1,4 +1,4 @@
-package command
+package manager
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Executor is an interface for executing commands.
+// Executor is an interface for executing managers.
 type Executor interface {
 	Exec(ctx context.Context, name string, args ...string) error
 }

@@ -13,9 +13,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
 
-	"github.com/izumin5210/gex/pkg/command"
-	"github.com/izumin5210/gex/pkg/command/dep"
-	"github.com/izumin5210/gex/pkg/command/mod"
+	"github.com/izumin5210/gex/pkg/manager/dep"
+	"github.com/izumin5210/gex/pkg/manager/mod"
 	"github.com/izumin5210/gex/pkg/tool"
 )
 
@@ -67,10 +66,10 @@ func run() error {
 	ctx := context.TODO()
 	logger := log.New(os.Stdout, "", 0)
 	fs := afero.NewOsFs()
-	cmdExecutor := command.NewExecutor(os.Stdout, os.Stderr, os.Stdin, workingDir, flagVerbose, logger)
+	cmdExecutor := manager.NewExecutor(os.Stdout, os.Stderr, os.Stdin, workingDir, flagVerbose, logger)
 	var (
-		builder command.Builder
-		adder   command.Adder
+		builder manager.Builder
+		adder   manager.Adder
 	)
 
 	switch detectMode(ctx, fs) {

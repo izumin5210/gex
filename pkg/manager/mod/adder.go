@@ -5,18 +5,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/izumin5210/gex/pkg/command"
+	"github.com/izumin5210/gex/pkg/manager"
 )
 
-// NewAdder creates a command.Adder instance to add tools to Modules.
-func NewAdder(executor command.Executor) command.Adder {
+// NewAdder creates a manager.Adder instance to add tools to Modules.
+func NewAdder(executor manager.Executor) manager.Adder {
 	return &adderImpl{
 		executor: executor,
 	}
 }
 
 type adderImpl struct {
-	executor command.Executor
+	executor manager.Executor
 }
 
 func (a *adderImpl) Add(ctx context.Context, pkgs []string, verbose bool) error {

@@ -1,23 +1,22 @@
-package dep
+package mod
 
 import (
 	"context"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 
-	"github.com/izumin5210/gex/pkg/command"
+	"github.com/izumin5210/gex/pkg/manager"
 )
 
-// NewBuilder creates a command.Builder instance to build tools vendored with dep.
-func NewBuilder(executor command.Executor) command.Builder {
+// NewBuilder creates a manager.Builder instance to build tools vendored with Modules.
+func NewBuilder(executor manager.Executor) manager.Builder {
 	return &builderImpl{
 		executor: executor,
 	}
 }
 
 type builderImpl struct {
-	executor command.Executor
+	executor manager.Executor
 }
 
 func (b *builderImpl) Build(ctx context.Context, binPath, pkg string, verbose bool) error {
@@ -25,6 +24,6 @@ func (b *builderImpl) Build(ctx context.Context, binPath, pkg string, verbose bo
 	if verbose {
 		args = append(args, "-v")
 	}
-	args = append(args, "./"+filepath.Join("vendor", pkg))
+	args = append(args, pkg)
 	return errors.WithStack(b.executor.Exec(ctx, "go", args...))
 }
