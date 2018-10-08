@@ -95,6 +95,9 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.BinDirName == "" {
 		c.BinDirName = d.BinDirName
 	}
+	if c.Logger == nil {
+		c.Logger = d.Logger
+	}
 }
 
 func (c *Config) createManager() (
