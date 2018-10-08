@@ -48,7 +48,9 @@ func run() error {
 	pflag.Parse()
 	args := pflag.Args()
 
-	toolRepo, err := gex.Default.Create()
+	var cfg gex.Config
+	cfg.Verbose = flagVerbose
+	toolRepo, err := cfg.Create()
 	if err != nil {
 		return errors.WithStack(err)
 	}
