@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/izumin5210/gex/pkg/manager"
 	"github.com/izumin5210/gex/pkg/manager/dep"
@@ -161,7 +162,7 @@ func (c *Config) DetectMode() (m Mode) {
 		return
 	}
 
-	st, err := c.FS.Stat("Gopkg.toml")
+	st, err := c.FS.Stat(filepath.Join(c.WorkingDir, "Gopkg.toml"))
 	if err == nil && !st.IsDir() {
 		m = ModeDep
 		return
