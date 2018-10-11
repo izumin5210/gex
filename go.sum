@@ -14,6 +14,8 @@ github.com/haya14busa/errorformat v0.0.0-20180607161917-689b7d67b7a8 h1:PWjuWhRw
 github.com/haya14busa/errorformat v0.0.0-20180607161917-689b7d67b7a8/go.mod h1:TNvdwGsVM9pBShG9giP++XhdzBWSSKnvNAO9K7ERnyw=
 github.com/haya14busa/reviewdog v0.0.0-20180723114510-ffb00ef78fd3 h1:zue79RaaFpucGy7rjtHiGD6iZr/b0Wn/EG4RfVRc52Q=
 github.com/haya14busa/reviewdog v0.0.0-20180723114510-ffb00ef78fd3/go.mod h1:6S1pmGlj8cAOvGnz97vdbRPjFTZhHQ0NLSIka21vY8A=
+github.com/kubernetes/utils v0.0.0-20181011165025-cd6a8f44fe79 h1:FrOYlrwz3quB1SDxmGuL1rG4ECkTFqJw0BTdfaTvQWA=
+github.com/kubernetes/utils v0.0.0-20181011165025-cd6a8f44fe79/go.mod h1:2mshjrOltsUkHset7dwk3ShLzdP39hVTliz3s2ASt4k=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348 h1:MtvEpTB6LX3vkb4ax0b5D2DHbNAUsen0Gx5wZoq3lV4=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=
 github.com/mattn/go-shellwords v1.0.3 h1:K/VxK7SZ+cvuPgFSLKi5QPI9Vr/ipOf4C1gN+ntueUk=
@@ -49,3 +51,7 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+k8s.io/utils v0.0.0-20180918230422-cd34563cd63c h1:1fJozimgUsIqPVvgjlpeh53pMbPFXXFiCoe4CErMFJ0=
+k8s.io/utils v0.0.0-20180918230422-cd34563cd63c/go.mod h1:8k8uAuAQ0rXslZKaEWd0c3oVhZz7sSzSiPnVZayjIX0=
+k8s.io/utils v0.0.0-20181011165025-cd6a8f44fe79 h1:2l1Z5VkVYHbrAAPW8UKGymkI6WAk14oFmVGXHwohUPk=
+k8s.io/utils v0.0.0-20181011165025-cd6a8f44fe79/go.mod h1:8k8uAuAQ0rXslZKaEWd0c3oVhZz7sSzSiPnVZayjIX0=

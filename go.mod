@@ -8,6 +8,7 @@ require (
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/haya14busa/errorformat v0.0.0-20180607161917-689b7d67b7a8 // indirect
 	github.com/haya14busa/reviewdog v0.0.0-20180723114510-ffb00ef78fd3
+	github.com/kubernetes/utils v0.0.0-20181011165025-cd6a8f44fe79
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348 // indirect
 	github.com/mattn/go-shellwords v1.0.3 // indirect
 	github.com/pkg/errors v0.8.0
@@ -22,4 +23,5 @@ require (
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f // indirect
 	google.golang.org/appengine v1.2.0 // indirect
 	gopkg.in/yaml.v2 v2.2.1 // indirect
+	k8s.io/utils v0.0.0-20181011165025-cd6a8f44fe79
 )
