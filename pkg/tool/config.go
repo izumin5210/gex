@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/afero"
 )
 
+// Config contains configurations to manage development tools.
 type Config struct {
 	FS           afero.Fs
 	WorkingDir   string
@@ -18,6 +19,7 @@ type Config struct {
 	Log          *log.Logger
 }
 
+// RequireManifest returns an error if the manifest file does not exist.
 func (c *Config) RequireManifest() error {
 	if ok, err := afero.Exists(c.FS, c.ManifestPath()); err != nil {
 		return errors.WithStack(err)
