@@ -5,11 +5,11 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/utils/exec"
 )
 
 // Executor is an interface for executing managers.
@@ -18,7 +18,7 @@ type Executor interface {
 }
 
 // NewExecutor creates a new Executor instance.
-func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, log *log.Logger) Executor {
+func NewExecutor(execer exec.Interface, outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, log *log.Logger) Executor {
 	env := os.Environ()
 	for _, e := range env {
 		kv := strings.SplitN(e, "=", 2)
@@ -28,6 +28,7 @@ func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, 
 		env = append(env, strings.Join(kv, "="))
 	}
 	return &executorImpl{
+		execer:  execer,
 		outW:    outW,
 		errW:    errW,
 		inR:     inR,
@@ -39,6 +40,7 @@ func NewExecutor(outW, errW io.Writer, inR io.Reader, cwd string, verbose bool, 
 }
 
 type executorImpl struct {
+	execer     exec.Interface
 	outW, errW io.Writer
 	inR        io.Reader
 	cwd        string
@@ -48,12 +50,12 @@ type executorImpl struct {
 }
 
 func (e *executorImpl) Exec(ctx context.Context, name string, args ...string) error {
-	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Stdout = e.outW
-	cmd.Stderr = e.errW
-	cmd.Stdin = e.inR
-	cmd.Dir = e.cwd
-	cmd.Env = e.env
+	cmd := e.execer.CommandContext(ctx, name, args...)
+	cmd.SetStdout(e.outW)
+	cmd.SetStderr(e.errW)
+	cmd.SetStdin(e.inR)
+	cmd.SetDir(e.cwd)
+	cmd.SetEnv(e.env)
 	if e.verbose {
 		e.log.Printf("    + %s\n", strings.Join(append([]string{name}, args...), " "))
 	}

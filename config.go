@@ -5,15 +5,16 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/afero"
+	"k8s.io/utils/exec"
 
 	"github.com/izumin5210/gex/pkg/manager"
 	"github.com/izumin5210/gex/pkg/manager/dep"
 	"github.com/izumin5210/gex/pkg/manager/mod"
 	"github.com/izumin5210/gex/pkg/tool"
-	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
 
 // Config specifies the configration for managing development tools.
@@ -22,7 +23,8 @@ type Config struct {
 	ErrWriter io.Writer
 	InReader  io.Reader
 
-	FS afero.Fs
+	FS     afero.Fs
+	Execer exec.Interface
 
 	WorkingDir   string
 	RootDir      string
@@ -48,6 +50,7 @@ func createDefaultConfig() *Config {
 		ErrWriter:    os.Stderr,
 		InReader:     os.Stdin,
 		FS:           afero.NewOsFs(),
+		Execer:       exec.New(),
 		WorkingDir:   wd,
 		ManifestName: "tools.go",
 		BinDirName:   "bin",
@@ -90,6 +93,9 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.FS == nil {
 		c.FS = d.FS
 	}
+	if c.Execer == nil {
+		c.Execer = d.Execer
+	}
 	if c.WorkingDir == "" {
 		c.WorkingDir = d.WorkingDir
 	}
@@ -116,7 +122,7 @@ func (c *Config) createManager() (
 	},
 	error,
 ) {
-	executor := manager.NewExecutor(c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Verbose, c.Logger)
+	executor := manager.NewExecutor(c.Execer, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Verbose, c.Logger)
 	var (
 		builder manager.Builder
 		adder   manager.Adder
@@ -163,7 +169,7 @@ func (c *Config) DetectMode() (m Mode) {
 
 	defer func() { c.mode = m }()
 
-	out, err := exec.Command("go", "env", "GOMOD").Output()
+	out, err := c.Execer.Command("go", "env", "GOMOD").Output()
 	if err == nil && len(bytes.TrimRight(out, "\n")) > 0 {
 		m = ModeModules
 		return
