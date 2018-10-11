@@ -104,7 +104,7 @@ func (c *Config) setDefaultsIfNeeded() {
 	}
 
 	if c.RootDir == "" {
-		c.RootDir, _ = c.findRoot()
+		c.RootDir, _ = c.findRoot(c.ManifestName)
 	}
 }
 
@@ -127,7 +127,7 @@ func (c *Config) createManager() (
 		builder = mod.NewBuilder(executor)
 		adder = mod.NewAdder(executor)
 	case ModeDep:
-		builder = dep.NewBuilder(executor)
+		builder = dep.NewBuilder(executor, c.RootDir)
 		adder = dep.NewAdder(executor)
 	default:
 		return nil, errors.New("failed to detect a dependencies management tool")
@@ -169,8 +169,8 @@ func (c *Config) DetectMode() (m Mode) {
 		return
 	}
 
-	st, err := c.FS.Stat(filepath.Join(c.WorkingDir, "Gopkg.toml"))
-	if err == nil && !st.IsDir() {
+	_, err = c.findRoot("Gopkg.toml")
+	if err == nil {
 		m = ModeDep
 		return
 	}
@@ -178,10 +178,10 @@ func (c *Config) DetectMode() (m Mode) {
 	return
 }
 
-func (c *Config) findRoot() (string, error) {
+func (c *Config) findRoot(manifest string) (string, error) {
 	from := c.WorkingDir
 	for {
-		if ok, err := afero.Exists(c.FS, filepath.Join(from, c.ManifestName)); ok {
+		if ok, err := afero.Exists(c.FS, filepath.Join(from, manifest)); ok {
 			return from, nil
 		} else if err != nil {
 			return "", errors.WithStack(err)
