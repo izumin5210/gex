@@ -30,11 +30,10 @@ type Config struct {
 	RootDir      string
 	ManifestName string
 	BinDirName   string
+	Mode         Mode
 
 	Verbose bool
 	Logger  *log.Logger
-
-	mode Mode
 }
 
 // Default contains default configuration.
@@ -45,7 +44,7 @@ func createDefaultConfig() *Config {
 	if wd == "" {
 		wd = "."
 	}
-	return &Config{
+	cfg := &Config{
 		OutWriter:    os.Stdout,
 		ErrWriter:    os.Stderr,
 		InReader:     os.Stdin,
@@ -56,6 +55,8 @@ func createDefaultConfig() *Config {
 		BinDirName:   "bin",
 		Logger:       log.New(os.Stdout, "", 0),
 	}
+	cfg.DetectMode()
+	return cfg
 }
 
 // Create creates a new instance of tool.Repository to manage developemnt tools.
@@ -112,6 +113,10 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.RootDir == "" {
 		c.RootDir, _ = c.findRoot(c.ManifestName)
 	}
+
+	if c.Mode == ModeUnknown {
+		c.DetectMode()
+	}
 }
 
 func (c *Config) createManager() (
@@ -128,7 +133,7 @@ func (c *Config) createManager() (
 		adder   manager.Adder
 	)
 
-	switch c.DetectMode() {
+	switch c.Mode {
 	case ModeModules:
 		builder = mod.NewBuilder(executor)
 		adder = mod.NewAdder(executor)
@@ -161,25 +166,20 @@ const (
 )
 
 // DetectMode returns a current Mode.
-func (c *Config) DetectMode() (m Mode) {
-	if c.mode != ModeUnknown {
-		m = c.mode
-		return
-	}
-
-	defer func() { c.mode = m }()
-
-	out, err := c.Execer.Command("go", "env", "GOMOD").Output()
+func (c *Config) DetectMode() {
+	out, err := c.Execer.Command("go", "env", "GOMOD").CombinedOutput()
 	if err == nil && len(bytes.TrimRight(out, "\n")) > 0 {
-		m = ModeModules
+		c.Mode = ModeModules
 		return
 	}
 
 	_, err = c.findRoot("Gopkg.toml")
 	if err == nil {
-		m = ModeDep
+		c.Mode = ModeDep
 		return
 	}
+
+	c.Mode = ModeUnknown
 
 	return
 }
