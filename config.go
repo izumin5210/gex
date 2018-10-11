@@ -127,7 +127,7 @@ func (c *Config) createManager() (
 		builder = mod.NewBuilder(executor)
 		adder = mod.NewAdder(executor)
 	case ModeDep:
-		builder = dep.NewBuilder(executor, c.RootDir)
+		builder = dep.NewBuilder(executor, c.RootDir, c.WorkingDir)
 		adder = dep.NewAdder(executor)
 	default:
 		return nil, errors.New("failed to detect a dependencies management tool")
