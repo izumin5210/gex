@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 
 	"github.com/izumin5210/gex/pkg/manager"
 )
@@ -20,7 +19,6 @@ type Repository interface {
 
 type repositoryImpl struct {
 	*Config
-	fs       afero.Fs
 	parser   Parser
 	writer   Writer
 	executor manager.Executor
@@ -29,12 +27,11 @@ type repositoryImpl struct {
 }
 
 // NewRepository creates a new Repository instance.
-func NewRepository(fs afero.Fs, executor manager.Executor, builder manager.Builder, adder manager.Adder, cfg *Config) Repository {
+func NewRepository(executor manager.Executor, builder manager.Builder, adder manager.Adder, cfg *Config) Repository {
 	return &repositoryImpl{
 		Config:   cfg,
-		fs:       fs,
-		parser:   NewParser(fs),
-		writer:   NewWriter(fs),
+		parser:   NewParser(cfg.FS),
+		writer:   NewWriter(cfg.FS),
 		executor: executor,
 		builder:  builder,
 		adder:    adder,
@@ -74,9 +71,13 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 }
 
 func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
+	if err := r.RequireManifest(); err != nil {
+		return "", errors.WithStack(err)
+	}
+
 	binPath := r.BinPath(t.Name())
 
-	if st, err := r.fs.Stat(binPath); err != nil {
+	if st, err := r.FS.Stat(binPath); err != nil {
 		if r.Verbose {
 			r.Log.Printf("  --> Build %s\n", t)
 		}
@@ -92,6 +93,10 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 }
 
 func (r *repositoryImpl) BuildAll(ctx context.Context) error {
+	if err := r.RequireManifest(); err != nil {
+		return errors.WithStack(err)
+	}
+
 	m, err := r.parser.Parse(r.ManifestPath())
 	if err != nil {
 		return errors.Wrap(err, "failed to parse the manifest file")
@@ -108,6 +113,10 @@ func (r *repositoryImpl) BuildAll(ctx context.Context) error {
 }
 
 func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) error {
+	if err := r.RequireManifest(); err != nil {
+		return errors.WithStack(err)
+	}
+
 	m, err := r.parser.Parse(r.ManifestPath())
 	if err != nil {
 		return errors.Wrap(err, "failed to parse the manifest file")
