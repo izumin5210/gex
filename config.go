@@ -25,6 +25,7 @@ type Config struct {
 	FS afero.Fs
 
 	WorkingDir   string
+	RootDir      string
 	ManifestName string
 	BinDirName   string
 
@@ -63,8 +64,10 @@ func (c *Config) Create() (tool.Repository, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	return tool.NewRepository(c.FS, manager, manager, manager, &tool.Config{
+	return tool.NewRepository(manager, manager, manager, &tool.Config{
+		FS:           c.FS,
 		WorkingDir:   c.WorkingDir,
+		RootDir:      c.RootDir,
 		ManifestName: c.ManifestName,
 		BinDirName:   c.BinDirName,
 		Verbose:      c.Verbose,
@@ -99,6 +102,10 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.Logger == nil {
 		c.Logger = d.Logger
 	}
+
+	if c.RootDir == "" {
+		c.RootDir, _ = c.findRoot(c.ManifestName)
+	}
 }
 
 func (c *Config) createManager() (
@@ -120,7 +127,7 @@ func (c *Config) createManager() (
 		builder = mod.NewBuilder(executor)
 		adder = mod.NewAdder(executor)
 	case ModeDep:
-		builder = dep.NewBuilder(executor)
+		builder = dep.NewBuilder(executor, c.RootDir)
 		adder = dep.NewAdder(executor)
 	default:
 		return nil, errors.New("failed to detect a dependencies management tool")
@@ -162,11 +169,28 @@ func (c *Config) DetectMode() (m Mode) {
 		return
 	}
 
-	st, err := c.FS.Stat(filepath.Join(c.WorkingDir, "Gopkg.toml"))
-	if err == nil && !st.IsDir() {
+	_, err = c.findRoot("Gopkg.toml")
+	if err == nil {
 		m = ModeDep
 		return
 	}
 
 	return
+}
+
+func (c *Config) findRoot(manifest string) (string, error) {
+	from := c.WorkingDir
+	for {
+		if ok, err := afero.Exists(c.FS, filepath.Join(from, manifest)); ok {
+			return from, nil
+		} else if err != nil {
+			return "", errors.WithStack(err)
+		}
+
+		parent := filepath.Dir(from)
+		if parent == from {
+			return "", errors.Errorf("could not find %s", c.ManifestName)
+		}
+		from = parent
+	}
 }

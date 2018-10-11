@@ -10,14 +10,16 @@ import (
 )
 
 // NewBuilder creates a manager.Builder instance to build tools vendored with dep.
-func NewBuilder(executor manager.Executor) manager.Builder {
+func NewBuilder(executor manager.Executor, rootDir string) manager.Builder {
 	return &builderImpl{
 		executor: executor,
+		rootDir:  rootDir,
 	}
 }
 
 type builderImpl struct {
 	executor manager.Executor
+	rootDir  string
 }
 
 func (b *builderImpl) Build(ctx context.Context, binPath, pkg string, verbose bool) error {
@@ -25,6 +27,6 @@ func (b *builderImpl) Build(ctx context.Context, binPath, pkg string, verbose bo
 	if verbose {
 		args = append(args, "-v")
 	}
-	args = append(args, "./"+filepath.Join("vendor", pkg))
+	args = append(args, filepath.Join(b.rootDir, "vendor", pkg))
 	return errors.WithStack(b.executor.Exec(ctx, "go", args...))
 }
