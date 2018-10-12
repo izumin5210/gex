@@ -71,10 +71,6 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 }
 
 func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
-	if err := r.RequireManifest(); err != nil {
-		return "", errors.WithStack(err)
-	}
-
 	binPath := r.BinPath(t.Name())
 
 	if st, err := r.FS.Stat(binPath); err != nil {
