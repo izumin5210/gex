@@ -5,15 +5,16 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/afero"
+	"k8s.io/utils/exec"
 
 	"github.com/izumin5210/gex/pkg/manager"
 	"github.com/izumin5210/gex/pkg/manager/dep"
 	"github.com/izumin5210/gex/pkg/manager/mod"
 	"github.com/izumin5210/gex/pkg/tool"
-	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
 
 // Config specifies the configration for managing development tools.
@@ -22,17 +23,17 @@ type Config struct {
 	ErrWriter io.Writer
 	InReader  io.Reader
 
-	FS afero.Fs
+	FS     afero.Fs
+	Execer exec.Interface
 
 	WorkingDir   string
 	RootDir      string
 	ManifestName string
 	BinDirName   string
+	Mode         Mode
 
 	Verbose bool
 	Logger  *log.Logger
-
-	mode Mode
 }
 
 // Default contains default configuration.
@@ -43,16 +44,19 @@ func createDefaultConfig() *Config {
 	if wd == "" {
 		wd = "."
 	}
-	return &Config{
+	cfg := &Config{
 		OutWriter:    os.Stdout,
 		ErrWriter:    os.Stderr,
 		InReader:     os.Stdin,
 		FS:           afero.NewOsFs(),
+		Execer:       exec.New(),
 		WorkingDir:   wd,
 		ManifestName: "tools.go",
 		BinDirName:   "bin",
 		Logger:       log.New(os.Stdout, "", 0),
 	}
+	cfg.DetectMode()
+	return cfg
 }
 
 // Create creates a new instance of tool.Repository to manage developemnt tools.
@@ -90,6 +94,9 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.FS == nil {
 		c.FS = d.FS
 	}
+	if c.Execer == nil {
+		c.Execer = d.Execer
+	}
 	if c.WorkingDir == "" {
 		c.WorkingDir = d.WorkingDir
 	}
@@ -106,6 +113,10 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.RootDir == "" {
 		c.RootDir, _ = c.findRoot(c.ManifestName)
 	}
+
+	if c.Mode == ModeUnknown {
+		c.DetectMode()
+	}
 }
 
 func (c *Config) createManager() (
@@ -116,13 +127,13 @@ func (c *Config) createManager() (
 	},
 	error,
 ) {
-	executor := manager.NewExecutor(c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Verbose, c.Logger)
+	executor := manager.NewExecutor(c.Execer, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Verbose, c.Logger)
 	var (
 		builder manager.Builder
 		adder   manager.Adder
 	)
 
-	switch c.DetectMode() {
+	switch c.Mode {
 	case ModeModules:
 		builder = mod.NewBuilder(executor)
 		adder = mod.NewAdder(executor)
@@ -154,26 +165,27 @@ const (
 	ModeDep
 )
 
-// DetectMode returns a current Mode.
-func (c *Config) DetectMode() (m Mode) {
-	if c.mode != ModeUnknown {
-		m = c.mode
-		return
-	}
-
-	defer func() { c.mode = m }()
-
-	out, err := exec.Command("go", "env", "GOMOD").Output()
+// DetectMode detects a current Mode and sets a root directory.
+func (c *Config) DetectMode() {
+	out, err := c.Execer.Command("go", "env", "GOMOD").CombinedOutput()
 	if err == nil && len(bytes.TrimRight(out, "\n")) > 0 {
-		m = ModeModules
+		c.Mode = ModeModules
+		if c.RootDir == "" {
+			c.RootDir = filepath.Dir(string(out))
+		}
 		return
 	}
 
-	_, err = c.findRoot("Gopkg.toml")
+	root, err := c.findRoot("Gopkg.toml")
 	if err == nil {
-		m = ModeDep
+		c.Mode = ModeDep
+		if c.RootDir == "" {
+			c.RootDir = root
+		}
 		return
 	}
+
+	c.Mode = ModeUnknown
 
 	return
 }
