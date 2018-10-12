@@ -165,17 +165,23 @@ const (
 	ModeDep
 )
 
-// DetectMode returns a current Mode.
+// DetectMode detects a current Mode and sets a root directory.
 func (c *Config) DetectMode() {
 	out, err := c.Execer.Command("go", "env", "GOMOD").CombinedOutput()
 	if err == nil && len(bytes.TrimRight(out, "\n")) > 0 {
 		c.Mode = ModeModules
+		if c.RootDir == "" {
+			c.RootDir = filepath.Dir(string(out))
+		}
 		return
 	}
 
-	_, err = c.findRoot("Gopkg.toml")
+	root, err := c.findRoot("Gopkg.toml")
 	if err == nil {
 		c.Mode = ModeDep
+		if c.RootDir == "" {
+			c.RootDir = root
+		}
 		return
 	}
 

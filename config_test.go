@@ -58,12 +58,21 @@ func TestConfig_DetectMode(t *testing.T) {
 		fs     afero.Fs
 		execer exec.Interface
 		mode   gex.Mode
+		root   string
 	}{
 		{
 			test:   "modules",
 			fs:     createFS(t),
 			execer: createExecer(t, filepath.Join(wd, "go.mod")),
 			mode:   gex.ModeModules,
+			root:   wd,
+		},
+		{
+			test:   "modules from subdirectory",
+			fs:     createFS(t),
+			execer: createExecer(t, filepath.Join(filepath.Dir(wd), "go.mod")),
+			mode:   gex.ModeModules,
+			root:   filepath.Dir(wd),
 		},
 		{
 			test: "dep",
@@ -75,6 +84,7 @@ func TestConfig_DetectMode(t *testing.T) {
 			}(),
 			execer: createExecer(t, ""),
 			mode:   gex.ModeDep,
+			root:   wd,
 		},
 		{
 			test: "dep from subdirectory",
@@ -86,6 +96,7 @@ func TestConfig_DetectMode(t *testing.T) {
 			}(),
 			execer: createExecer(t, ""),
 			mode:   gex.ModeDep,
+			root:   filepath.Dir(wd),
 		},
 		{
 			test:   "unknown",
@@ -102,6 +113,10 @@ func TestConfig_DetectMode(t *testing.T) {
 
 			if got, want := cfg.Mode, tc.mode; got != want {
 				t.Errorf("Detected mode is %v, want %v", got, want)
+			}
+
+			if got, want := cfg.RootDir, tc.root; got != want {
+				t.Errorf("Detected root is %s, want %s", got, want)
 			}
 		})
 	}
