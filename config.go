@@ -110,10 +110,6 @@ func (c *Config) setDefaultsIfNeeded() {
 		c.Logger = d.Logger
 	}
 
-	if c.RootDir == "" {
-		c.RootDir, _ = c.findRoot(c.ManifestName)
-	}
-
 	if c.Mode == ModeUnknown {
 		c.DetectMode()
 	}
