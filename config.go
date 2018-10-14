@@ -113,6 +113,12 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.Mode == ModeUnknown {
 		c.DetectMode()
 	}
+
+	if rootDir, err := c.findRoot(c.ManifestName); err == nil {
+		if len(rootDir) > len(c.RootDir) {
+			c.RootDir = rootDir
+		}
+	}
 }
 
 func (c *Config) createManager() (
