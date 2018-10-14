@@ -110,12 +110,14 @@ func (c *Config) setDefaultsIfNeeded() {
 		c.Logger = d.Logger
 	}
 
-	if c.RootDir == "" {
-		c.RootDir, _ = c.findRoot(c.ManifestName)
-	}
-
 	if c.Mode == ModeUnknown {
 		c.DetectMode()
+	}
+
+	if rootDir, err := c.findRoot(c.ManifestName); err == nil {
+		if len(rootDir) > len(c.RootDir) {
+			c.RootDir = rootDir
+		}
 	}
 }
 
