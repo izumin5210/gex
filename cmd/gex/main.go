@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/izumin5210/gex"
@@ -49,7 +50,10 @@ func run() error {
 	args := pflag.Args()
 
 	var cfg gex.Config
-	cfg.Verbose = flagVerbose
+	if flagVerbose {
+		cfg.Verbose = true
+		cfg.Logger = log.New(os.Stderr, "", 0)
+	}
 	toolRepo, err := cfg.Create()
 	if err != nil {
 		return errors.WithStack(err)
