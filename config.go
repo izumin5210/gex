@@ -3,6 +3,7 @@ package gex
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -53,7 +54,7 @@ func createDefaultConfig() *Config {
 		WorkingDir:   wd,
 		ManifestName: "tools.go",
 		BinDirName:   "bin",
-		Logger:       log.New(os.Stdout, "", 0),
+		Logger:       log.New(ioutil.Discard, "", 0),
 	}
 	cfg.DetectMode()
 	return cfg
@@ -129,7 +130,7 @@ func (c *Config) createManager() (
 	},
 	error,
 ) {
-	executor := manager.NewExecutor(c.Execer, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Verbose, c.Logger)
+	executor := manager.NewExecutor(c.Execer, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Logger)
 	var (
 		builder manager.Builder
 		adder   manager.Adder

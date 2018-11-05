@@ -39,9 +39,7 @@ func NewRepository(executor manager.Executor, builder manager.Builder, adder man
 }
 
 func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
-	if r.Verbose {
-		r.Log.Printf("  --> Add %s", strings.Join(pkgs, ", "))
-	}
+	r.Log.Println("add", strings.Join(pkgs, ", "))
 	err := r.adder.Add(ctx, pkgs, r.Verbose)
 	if err != nil {
 		return errors.Wrap(err, "failed to add tools")
@@ -74,9 +72,7 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 	binPath := r.BinPath(t.Name())
 
 	if st, err := r.FS.Stat(binPath); err != nil {
-		if r.Verbose {
-			r.Log.Printf("  --> Build %s\n", t)
-		}
+		r.Log.Println("build", t)
 		err := r.builder.Build(ctx, binPath, string(t), r.Verbose)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to build %s", t)
