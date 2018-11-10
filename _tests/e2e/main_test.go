@@ -42,7 +42,7 @@ func TestGex_Add(t *testing.T) {
 	})
 
 	t.Run("add tools included in the same package", func(t *testing.T) {
-		checkErr(t, exec.Command("gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast").Run())
+		checkErr(t, exec.Command("gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo@v1.1.1", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast@v1.1.1").Run())
 		snapshotManifest(t)
 	})
 
