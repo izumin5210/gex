@@ -11,6 +11,7 @@ import (
 
 // Repository is an interface for managing and operating tools
 type Repository interface {
+	List(ctx context.Context) ([]Tool, error)
 	Add(ctx context.Context, pkgs ...string) error
 	Build(ctx context.Context, t Tool) (string, error)
 	BuildAll(ctx context.Context) error
@@ -36,6 +37,15 @@ func NewRepository(executor manager.Executor, builder manager.Builder, adder man
 		builder:  builder,
 		adder:    adder,
 	}
+}
+
+func (r *repositoryImpl) List(ctx context.Context) ([]Tool, error) {
+	m, err := r.getManifest()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return m.Tools(), nil
 }
 
 func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
@@ -85,13 +95,9 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 }
 
 func (r *repositoryImpl) BuildAll(ctx context.Context) error {
-	if err := r.RequireManifest(); err != nil {
-		return errors.WithStack(err)
-	}
-
-	m, err := r.parser.Parse(r.ManifestPath())
+	m, err := r.getManifest()
 	if err != nil {
-		return errors.Wrap(err, "failed to parse the manifest file")
+		return errors.WithStack(err)
 	}
 
 	for _, t := range m.Tools() {
@@ -105,13 +111,9 @@ func (r *repositoryImpl) BuildAll(ctx context.Context) error {
 }
 
 func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) error {
-	if err := r.RequireManifest(); err != nil {
-		return errors.WithStack(err)
-	}
-
-	m, err := r.parser.Parse(r.ManifestPath())
+	m, err := r.getManifest()
 	if err != nil {
-		return errors.Wrap(err, "failed to parse the manifest file")
+		return errors.WithStack(err)
 	}
 
 	t, ok := m.FindTool(name)
@@ -125,4 +127,17 @@ func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) e
 	}
 
 	return errors.WithStack(r.executor.Exec(ctx, bin, args...))
+}
+
+func (r *repositoryImpl) getManifest() (*Manifest, error) {
+	if err := r.RequireManifest(); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	m, err := r.parser.Parse(r.ManifestPath())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse the manifest file")
+	}
+
+	return m, nil
 }
