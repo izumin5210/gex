@@ -5,10 +5,10 @@ set -o pipefail
 
 cd "$(dirname $0)/../.."
 
-DIR=_tests/integration
+DIR=_tests/e2e
 
 getImageName() {
-  echo gex-integration-test-$1:go$GO_VERSION
+  echo gex-e2e-test-$1:go$GO_VERSION
 }
 
 cleanup() {
