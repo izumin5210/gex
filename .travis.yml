@@ -24,3 +24,20 @@ jobs:
 
   - name: 'test'
     if: type != 'pull_request'
+
+  - &integration-test
+    name: integration-test
+    language: bash
+    sudo: required
+    services:
+    - docker
+    env:
+    - TARGET=dep
+    - GO_VERSION=1.11.2
+    script: ./_tests/integration/run_test.sh $TARGET
+    if: type != 'pull_request'
+
+  - <<: *integration-test
+    env:
+    - TARGET=mod
+    - GO_VERSION=1.11.2
