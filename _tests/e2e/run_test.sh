@@ -24,6 +24,7 @@ testDep() {
     --rm \
     -v $(pwd)/$DIR:/go/src/myapp \
     --env SNAPSHOT_DIR=.snapshots_dep \
+    --env TEST_TARGET=dep \
     $name \
     sh -c 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh && dep init -v && go test -v'
 }
@@ -38,6 +39,7 @@ testMod() {
     -v $(pwd)/$DIR:/go/src/myapp \
     --env SNAPSHOT_DIR=.snapshots_mod \
     --env GO111MODULE=on \
+    --env TEST_TARGET=mod \
     $name \
     sh -c 'go mod init && go test -v'
 }
