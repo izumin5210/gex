@@ -36,3 +36,11 @@ func (m *managerImpl) Build(ctx context.Context, binPath, pkg string, verbose bo
 	args = append(args, pkg)
 	return errors.WithStack(m.executor.Exec(ctx, "go", args...))
 }
+
+func (m *managerImpl) Sync(ctx context.Context, verbose bool) error {
+	args := []string{"mod", "tidy"}
+	if verbose {
+		args = append(args, "-v")
+	}
+	return errors.WithStack(m.executor.Exec(ctx, "go", args...))
+}

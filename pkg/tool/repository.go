@@ -58,14 +58,13 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 		m = NewManifest([]Tool{})
 	}
 
-	for _, pkg := range pkgs {
+	tools := make([]Tool, len(pkgs))
+
+	for i, pkg := range pkgs {
 		pkg = strings.SplitN(pkg, "@", 2)[0]
 		t := Tool(pkg)
 		m.AddTool(t)
-		_, err = r.Build(ctx, t)
-		if err != nil {
-			return errors.WithStack(err)
-		}
+		tools[i] = t
 	}
 
 	err = r.writer.Write(r.ManifestPath(), m)
@@ -73,6 +72,17 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 		return errors.Wrap(err, "failed to write a manifest file")
 	}
 
+	err = r.manager.Sync(ctx, r.Verbose)
+	if err != nil {
+		return errors.Wrap(err, "failed to sync packages")
+	}
+
+	for _, t := range tools {
+		_, err = r.Build(ctx, t)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
 	return nil
 }
 
