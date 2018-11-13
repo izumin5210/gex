@@ -15,6 +15,7 @@ import (
 // Executor is an interface for executing managers.
 type Executor interface {
 	Exec(ctx context.Context, name string, args ...string) error
+	Output(ctx context.Context, name string, args ...string) ([]byte, error)
 }
 
 // NewExecutor creates a new Executor instance.
@@ -56,4 +57,15 @@ func (e *executorImpl) Exec(ctx context.Context, name string, args ...string) er
 	cmd.SetEnv(e.env)
 	e.log.Println("execute", strings.Join(append([]string{name}, args...), " "))
 	return errors.WithStack(cmd.Run())
+}
+
+func (e *executorImpl) Output(ctx context.Context, name string, args ...string) ([]byte, error) {
+	cmd := e.execer.CommandContext(ctx, name, args...)
+	cmd.SetStderr(e.errW)
+	cmd.SetStdin(e.inR)
+	cmd.SetDir(e.cwd)
+	cmd.SetEnv(e.env)
+	e.log.Println("execute", strings.Join(append([]string{name}, args...), " "))
+	out, err := cmd.Output()
+	return out, errors.WithStack(err)
 }

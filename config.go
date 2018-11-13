@@ -64,12 +64,12 @@ func createDefaultConfig() *Config {
 func (c *Config) Create() (tool.Repository, error) {
 	c.setDefaultsIfNeeded()
 
-	manager, err := c.createManager()
+	manager, executor, err := c.createManager()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return tool.NewRepository(manager, manager, manager, &tool.Config{
+	return tool.NewRepository(executor, manager, &tool.Config{
 		FS:           c.FS,
 		WorkingDir:   c.WorkingDir,
 		RootDir:      c.RootDir,
@@ -123,39 +123,25 @@ func (c *Config) setDefaultsIfNeeded() {
 }
 
 func (c *Config) createManager() (
-	interface {
-		manager.Adder
-		manager.Builder
-		manager.Executor
-	},
+	manager.Interface,
+	manager.Executor,
 	error,
 ) {
 	executor := manager.NewExecutor(c.Execer, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Logger)
 	var (
-		builder manager.Builder
-		adder   manager.Adder
+		manager manager.Interface
 	)
 
 	switch c.Mode {
 	case ModeModules:
-		builder = mod.NewBuilder(executor)
-		adder = mod.NewAdder(executor)
+		manager = mod.NewManager(executor)
 	case ModeDep:
-		builder = dep.NewBuilder(executor, c.RootDir, c.WorkingDir)
-		adder = dep.NewAdder(executor)
+		manager = dep.NewManager(executor, c.RootDir, c.WorkingDir)
 	default:
-		return nil, errors.New("failed to detect a dependencies management tool")
+		return nil, nil, errors.New("failed to detect a dependencies management tool")
 	}
 
-	return &struct {
-		manager.Adder
-		manager.Builder
-		manager.Executor
-	}{
-		Adder:    adder,
-		Builder:  builder,
-		Executor: executor,
-	}, nil
+	return manager, executor, nil
 }
 
 // Mode represents the dependencies management tool that is used.

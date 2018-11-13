@@ -23,19 +23,17 @@ type repositoryImpl struct {
 	parser   Parser
 	writer   Writer
 	executor manager.Executor
-	builder  manager.Builder
-	adder    manager.Adder
+	manager  manager.Interface
 }
 
 // NewRepository creates a new Repository instance.
-func NewRepository(executor manager.Executor, builder manager.Builder, adder manager.Adder, cfg *Config) Repository {
+func NewRepository(executor manager.Executor, manager manager.Interface, cfg *Config) Repository {
 	return &repositoryImpl{
 		Config:   cfg,
 		parser:   NewParser(cfg.FS),
 		writer:   NewWriter(cfg.FS),
 		executor: executor,
-		builder:  builder,
-		adder:    adder,
+		manager:  manager,
 	}
 }
 
@@ -50,7 +48,7 @@ func (r *repositoryImpl) List(ctx context.Context) ([]Tool, error) {
 
 func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 	r.Log.Println("add", strings.Join(pkgs, ", "))
-	err := r.adder.Add(ctx, pkgs, r.Verbose)
+	err := r.manager.Add(ctx, pkgs, r.Verbose)
 	if err != nil {
 		return errors.Wrap(err, "failed to add tools")
 	}
@@ -60,14 +58,13 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 		m = NewManifest([]Tool{})
 	}
 
-	for _, pkg := range pkgs {
+	tools := make([]Tool, len(pkgs))
+
+	for i, pkg := range pkgs {
 		pkg = strings.SplitN(pkg, "@", 2)[0]
 		t := Tool(pkg)
 		m.AddTool(t)
-		_, err = r.Build(ctx, t)
-		if err != nil {
-			return errors.WithStack(err)
-		}
+		tools[i] = t
 	}
 
 	err = r.writer.Write(r.ManifestPath(), m)
@@ -75,6 +72,17 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 		return errors.Wrap(err, "failed to write a manifest file")
 	}
 
+	err = r.manager.Sync(ctx, r.Verbose)
+	if err != nil {
+		return errors.Wrap(err, "failed to sync packages")
+	}
+
+	for _, t := range tools {
+		_, err = r.Build(ctx, t)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
 	return nil
 }
 
@@ -83,7 +91,7 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 
 	if st, err := r.FS.Stat(binPath); err != nil {
 		r.Log.Println("build", t)
-		err := r.builder.Build(ctx, binPath, string(t), r.Verbose)
+		err := r.manager.Build(ctx, binPath, string(t), r.Verbose)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to build %s", t)
 		}
