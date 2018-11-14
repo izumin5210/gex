@@ -78,6 +78,10 @@ func (m *managerImpl) pickNewPackages(ctx context.Context, pkgs []string) ([]str
 		return nil, errors.WithStack(err)
 	}
 
+	if len(pkgSet) == 0 {
+		return pkgs, nil
+	}
+
 	result := make([]string, 0, len(pkgs))
 
 	for _, pkg := range pkgs {
@@ -99,7 +103,7 @@ func (m *managerImpl) pickNewPackages(ctx context.Context, pkgs []string) ([]str
 func (m *managerImpl) getExistingPackageSet(ctx context.Context) (map[string]struct{}, error) {
 	out, err := m.executor.Output(ctx, "dep", "status", "-json")
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return make(map[string]struct{}), nil
 	}
 	pkgs := []struct{ ProjectRoot string }{}
 	err = json.Unmarshal(out, &pkgs)
