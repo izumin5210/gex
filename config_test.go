@@ -1,19 +1,25 @@
 package gex_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
 	"k8s.io/utils/exec"
-	"k8s.io/utils/exec/testing"
+	testingexec "k8s.io/utils/exec/testing"
 
 	"github.com/izumin5210/gex"
 )
 
 func TestConfig_DetectMode(t *testing.T) {
 	wd := "/go/src/awesomeapp/foobar"
+
+	if v, ok := os.LookupEnv("GO111MODULE"); ok {
+		defer func() { os.Setenv("GO111MODULE", v) }()
+		os.Unsetenv("GO111MODULE")
+	}
 
 	checkGoEnvCmd := func(t *testing.T, cmd string, args []string) {
 		t.Helper()
