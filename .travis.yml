@@ -1,6 +1,6 @@
 language: go
 
-go: '1.11'
+go: '1.12'
 
 env:
   global:
@@ -33,11 +33,16 @@ jobs:
     - docker
     env:
     - TARGET=dep
-    - GO_VERSION=1.11.2
+    - GO_VERSION=1.11
     script: ./_tests/e2e/run_test.sh $TARGET
     if: type != 'pull_request'
 
   - <<: *e2e-test
     env:
     - TARGET=mod
-    - GO_VERSION=1.11.2
+    - GO_VERSION=1.11
+
+  - <<: *e2e-test
+    env:
+    - TARGET=mod
+    - GO_VERSION=1.12
