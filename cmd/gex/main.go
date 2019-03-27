@@ -14,7 +14,7 @@ import (
 
 const (
 	cliName = "gex"
-	version = "v0.4.4"
+	version = "v0.4.5"
 )
 
 var (
