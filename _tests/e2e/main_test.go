@@ -27,7 +27,7 @@ func TestGex_Add(t *testing.T) {
 	})
 
 	t.Run("add 2 tools", func(t *testing.T) {
-		checkCmd(t, exec.Command("gex", "--add", "github.com/haya14busa/reviewdog/cmd/reviewdog", "--add", "golang.org/x/lint/golint"))
+		checkCmd(t, exec.Command("gex", "--add", "github.com/srvc/wraperr/cmd/wraperr", "--add", "golang.org/x/lint/golint"))
 		snapshotManifest(t)
 	})
 
@@ -42,7 +42,7 @@ func TestGex_Add(t *testing.T) {
 	})
 
 	t.Run("add tools included in the same package", func(t *testing.T) {
-		checkCmd(t, exec.Command("gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo@v1.1.1", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast"))
+		checkCmd(t, exec.Command("gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast"))
 		snapshotManifest(t)
 	})
 
@@ -71,7 +71,7 @@ import _ "github.com/golang/mock/gomock"
 		gotBins[i] = filepath.Base(b)
 	}
 	sort.Strings(gotBins)
-	wantBins := []string{"protoc-gen-grpc-gateway", "reviewdog", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"}
+	wantBins := []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"}
 	sort.Strings(wantBins)
 
 	if got, want := gotBins, wantBins; !reflect.DeepEqual(got, want) {
