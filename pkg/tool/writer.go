@@ -50,5 +50,12 @@ import (
 	_ "{{$t}}"
 {{- end}}
 )
+
+// If you want to use tools, please run the following command:
+//  go generate ./tools.go
+//
+{{- range $t := .Tools}}
+//go:generate go build -v -o=./bin/{{$t.Name}} "{{$t}}"
+{{- end}}
 `))
 )
