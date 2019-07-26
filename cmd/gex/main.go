@@ -20,6 +20,7 @@ const (
 var (
 	pkgsToBeAdded []string
 	flagBuild     bool
+	flagInit      bool
 	flagVersion   bool
 	flagVerbose   bool
 	flagHelp      bool
@@ -28,6 +29,7 @@ var (
 func init() {
 	pflag.SetInterspersed(false)
 	pflag.StringArrayVar(&pkgsToBeAdded, "add", []string{}, "Add new tools")
+	pflag.BoolVar(&flagInit, "init", false, "Initialize tools manifest")
 	pflag.BoolVar(&flagBuild, "build", false, "Build all tools")
 	pflag.BoolVar(&flagVersion, "version", false, "Print the CLI version")
 	pflag.BoolVarP(&flagVerbose, "verbose", "v", false, "Verbose level output")
@@ -70,6 +72,8 @@ func run() error {
 		printHelp(os.Stdout)
 	case flagBuild:
 		err = toolRepo.BuildAll(ctx)
+	case flagInit:
+		err = toolRepo.Add(ctx, "github.com/izumin5210/gex/cmd/gex")
 	case len(args) > 0:
 		err = toolRepo.Run(ctx, args[0], args[1:]...)
 	default:
@@ -90,8 +94,11 @@ var (
 See https://github.com/golang/go/issues/25922#issuecomment-412992431
 
 Usage:
-  gex [command] [args]
+  gex --init
   gex --add [packages...]
+  gex [command] [args]
+  gex --Build
+  go generate ./tools.go
 
 Flags:`
 )
