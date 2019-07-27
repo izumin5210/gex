@@ -16,6 +16,7 @@ See https://github.com/golang/go/issues/25922#issuecomment-412992431
 - Manage versions of tools dependencies, and build them with specified version
 - **Does not introduce new mechanisms** to manage tool dependencies
 - **Only 2 commands** that you use: `--add` and `--build`
+- All you need to **execute `go generate ./tools.go`** if you want only to use tools
 
 
 ## Usage
@@ -47,7 +48,7 @@ $ cat go.mod | grep mock
 ```
 
 
-### `gex --build`
+### `gex --build` or `go generate ./tools.go`
 Build executable binaries into `$PWD/bin`.
 
 ```

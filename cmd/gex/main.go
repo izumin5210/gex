@@ -90,8 +90,9 @@ var (
 See https://github.com/golang/go/issues/25922#issuecomment-412992431
 
 Usage:
-  gex [command] [args]
-  gex --add [packages...]
+  gex --add [packages...]   Add new tool dependencies
+	go generate ./tools.go    Build tools
+  gex [command] [args]      Execute a tool
 
 Flags:`
 )
