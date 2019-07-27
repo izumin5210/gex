@@ -3,7 +3,7 @@ package tool_test
 import (
 	"testing"
 
-	"github.com/bradleyjkemp/cupaloy"
+	"github.com/bradleyjkemp/cupaloy/v2"
 	"github.com/spf13/afero"
 
 	"github.com/izumin5210/gex/pkg/tool"
