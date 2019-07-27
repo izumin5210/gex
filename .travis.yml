@@ -22,27 +22,39 @@ jobs:
     script: gex reviewdog -reporter=github-pr-review
     if: type = 'pull_request'
 
-  - name: 'test'
+  - &test
+    go: '1.12.x'
+    script: go test -v ./...
     if: type != 'pull_request'
 
+  - <<: *test
+    go: '1.11.x'
+
   - &e2e-test
-    name: e2e-test
-    language: bash
     sudo: required
     services:
     - docker
     env:
-    - TARGET=dep
-    - GO_VERSION=1.11
-    script: ./_tests/e2e/run_test.sh $TARGET
+    - E2E=1
+    - MODE=Mod
+    - GO_VERSION=112
+    script: go test -v ./tests/e2e -run ${MODE}_Go${GO_VERSION}
     if: type != 'pull_request'
 
   - <<: *e2e-test
     env:
-    - TARGET=mod
-    - GO_VERSION=1.11
+    - E2E=1
+    - MODE=Dep
+    - GO_VERSION=112
 
   - <<: *e2e-test
     env:
-    - TARGET=mod
-    - GO_VERSION=1.12
+    - E2E=1
+    - MODE=Mod
+    - GO_VERSION=111
+
+  - <<: *e2e-test
+    env:
+    - E2E=1
+    - MODE=Dep
+    - GO_VERSION=111
