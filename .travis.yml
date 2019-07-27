@@ -38,7 +38,7 @@ jobs:
     - E2E=1
     - MODE=Mod
     - GO_VERSION=112
-    script: go test -v ./tests/e2e -run ${MODE}_Go${GO_VERSION}
+    script: travis_retry go test -v ./tests/e2e -run ${MODE}_Go${GO_VERSION}
     if: type != 'pull_request'
 
   - <<: *e2e-test
