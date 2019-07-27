@@ -78,6 +78,7 @@ func testGex_Add(t *testing.T, mode TestMode, goVersion string) {
 	})
 
 	checkBinaries := func(t *testing.T, bins []string) {
+		t.Helper()
 		buf := new(bytes.Buffer)
 		tc.ExecCmd(t, []string{"ls", "-1", "./bin"}, buf, ioutil.Discard)
 		var gotBins []string
@@ -100,9 +101,8 @@ func testGex_Add(t *testing.T, mode TestMode, goVersion string) {
 	})
 
 	t.Run("generated binaries with `go generate`", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"rm", "-rf", "./bin"})
-		checkBinaries(t, []string{})
-		tc.CheckCmd(t, []string{"go", "geoenrate", "tools.go"})
+		tc.CheckCmd(t, []string{"rm", "-vrf", "./bin"})
+		tc.CheckCmd(t, []string{"go", "generate", "tools.go"})
 		checkBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
 	})
 }
