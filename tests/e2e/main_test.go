@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -17,30 +19,22 @@ import (
 	"github.com/ory/dockertest/docker"
 )
 
-func TestGex_Add_Mod_Go112(t *testing.T) {
-	t.Parallel()
-	testGex_Add(t, TestModeMod, "1.12")
-}
-
-func TestGex_Add_Dep_Go112(t *testing.T) {
-	t.Parallel()
-	testGex_Add(t, TestModeDep, "1.12")
-}
-
-func TestGex_Add_Mod_Go111(t *testing.T) {
-	t.Parallel()
-	testGex_Add(t, TestModeMod, "1.11")
-}
-
-func TestGex_Add_Dep_Go111(t *testing.T) {
-	t.Parallel()
-	testGex_Add(t, TestModeDep, "1.11")
-}
-
-func testGex_Add(t *testing.T, mode TestMode, goVersion string) {
+func TestGex_Add(t *testing.T) {
 	if os.Getenv("E2E") != "1" {
 		t.Skip("E2E tests are skipped. If you want to run them, you should set `E2E=1`.")
 	}
+
+	goVersion := strings.TrimPrefix(runtime.Version(), "go")
+	if v := os.Getenv("GO_VERSION"); v != "" {
+		goVersion = v
+	}
+	t.Logf("go version: %s", goVersion)
+
+	mode := TestModeMod
+	if v := os.Getenv("MODE"); v != "" {
+		checkErr(t, mode.UnmarshalText([]byte(v)))
+	}
+	t.Logf("test mode: %s", mode)
 
 	tc := CreateTestContainer(t, mode, goVersion)
 	if os.Getenv("DEBUG") != "1" {
@@ -117,9 +111,33 @@ func checkErr(t *testing.T, err error) {
 type TestMode int
 
 const (
-	TestModeMod TestMode = iota
+	TestModeUnknown TestMode = iota
+	TestModeMod
 	TestModeDep
 )
+
+func (tm TestMode) String() string {
+	switch tm {
+	case TestModeMod:
+		return "mod"
+	case TestModeDep:
+		return "dep"
+	default:
+		return "unknown"
+	}
+}
+
+func (tm *TestMode) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "mod":
+		*tm = TestModeMod
+	case "dep":
+		*tm = TestModeDep
+	default:
+		return fmt.Errorf("unknown mode: %s", text)
+	}
+	return nil
+}
 
 type TestContainer struct {
 	pool     *dockertest.Pool
