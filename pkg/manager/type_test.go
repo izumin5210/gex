@@ -1,4 +1,4 @@
-package gex_test
+package manager_test
 
 import (
 	"os"
@@ -10,10 +10,10 @@ import (
 	"k8s.io/utils/exec"
 	testingexec "k8s.io/utils/exec/testing"
 
-	"github.com/izumin5210/gex"
+	"github.com/izumin5210/gex/pkg/manager"
 )
 
-func TestConfig_DetectMode(t *testing.T) {
+func TestDetectType(t *testing.T) {
 	wd := "/go/src/awesomeapp/foobar"
 
 	if v, ok := os.LookupEnv("GO111MODULE"); ok {
@@ -63,21 +63,21 @@ func TestConfig_DetectMode(t *testing.T) {
 		test   string
 		fs     afero.Fs
 		execer exec.Interface
-		mode   gex.Mode
+		typ    manager.Type
 		root   string
 	}{
 		{
 			test:   "modules",
 			fs:     createFS(t),
 			execer: createExecer(t, filepath.Join(wd, "go.mod")),
-			mode:   gex.ModeModules,
+			typ:    manager.TypeModules,
 			root:   wd,
 		},
 		{
 			test:   "modules from subdirectory",
 			fs:     createFS(t),
 			execer: createExecer(t, filepath.Join(filepath.Dir(wd), "go.mod")),
-			mode:   gex.ModeModules,
+			typ:    manager.TypeModules,
 			root:   filepath.Dir(wd),
 		},
 		{
@@ -89,7 +89,7 @@ func TestConfig_DetectMode(t *testing.T) {
 				return fs
 			}(),
 			execer: createExecer(t, ""),
-			mode:   gex.ModeDep,
+			typ:    manager.TypeDep,
 			root:   wd,
 		},
 		{
@@ -101,27 +101,26 @@ func TestConfig_DetectMode(t *testing.T) {
 				return fs
 			}(),
 			execer: createExecer(t, ""),
-			mode:   gex.ModeDep,
+			typ:    manager.TypeDep,
 			root:   filepath.Dir(wd),
 		},
 		{
 			test:   "unknown",
 			fs:     createFS(t),
 			execer: createExecer(t, ""),
-			mode:   gex.ModeUnknown,
+			typ:    manager.TypeUnknown,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.test, func(t *testing.T) {
-			cfg := gex.Config{WorkingDir: wd, FS: tc.fs, Execer: tc.execer}
-			cfg.DetectMode()
+			typ, root := manager.DetectType(wd, tc.fs, tc.execer)
 
-			if got, want := cfg.Mode, tc.mode; got != want {
+			if got, want := typ, tc.typ; got != want {
 				t.Errorf("Detected mode is %v, want %v", got, want)
 			}
 
-			if got, want := cfg.RootDir, tc.root; got != want {
+			if got, want := root, tc.root; got != want {
 				t.Errorf("Detected root is %s, want %s", got, want)
 			}
 		})
