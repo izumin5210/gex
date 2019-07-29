@@ -1,6 +1,7 @@
 .travis.yml
 .reviewdog.yml
-_tests
+tests
+!tests/e2e/testdata
 bin
 README.md
 LICENSE
