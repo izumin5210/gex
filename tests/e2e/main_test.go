@@ -71,21 +71,34 @@ func TestGex_Add(t *testing.T) {
 		tc.SnapshotManifest(t)
 	})
 
-	buf := new(bytes.Buffer)
-	tc.ExecCmd(t, []string{"ls", "-1", "./bin"}, buf, ioutil.Discard)
-	var gotBins []string
-	for _, b := range strings.Split(buf.String(), "\n") {
-		if len(b) > 0 && b != "." {
-			gotBins = append(gotBins, b)
+	checkBinaries := func(t *testing.T, bins []string) {
+		t.Helper()
+		buf := new(bytes.Buffer)
+		tc.ExecCmd(t, []string{"ls", "-1", "./bin"}, buf, ioutil.Discard)
+		var gotBins []string
+		for _, b := range strings.Split(buf.String(), "\n") {
+			if len(b) > 0 && b != "." {
+				gotBins = append(gotBins, b)
+			}
+		}
+		sort.Strings(gotBins)
+		wantBins := bins[:]
+		sort.Strings(wantBins)
+
+		if got, want := gotBins, wantBins; !reflect.DeepEqual(got, want) {
+			t.Errorf("generated bins list is %v, want %v", got, want)
 		}
 	}
-	sort.Strings(gotBins)
-	wantBins := []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"}
-	sort.Strings(wantBins)
 
-	if got, want := gotBins, wantBins; !reflect.DeepEqual(got, want) {
-		t.Errorf("generated bins list is %v, want %v", got, want)
-	}
+	t.Run("generated binaries with `gex --add`", func(t *testing.T) {
+		checkBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
+	})
+
+	t.Run("generated binaries with `go generate`", func(t *testing.T) {
+		tc.CheckCmd(t, []string{"rm", "-vrf", "./bin"})
+		tc.CheckCmd(t, []string{"go", "generate", "tools.go"})
+		checkBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
+	})
 }
 
 func checkErr(t *testing.T, err error) {
@@ -185,6 +198,8 @@ func CreateTestContainer(t *testing.T, mode TestMode, goVersion string) *TestCon
 	default:
 		panic("unreachable")
 	}
+
+	tc.cupaloy = tc.cupaloy.WithOptions(cupaloy.SnapshotSubdirectory(".snapshots_" + mode.String()))
 
 	return tc
 }
