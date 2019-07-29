@@ -96,7 +96,7 @@ See https://github.com/golang/go/issues/25922#issuecomment-412992431
 Usage:
   gex --init
   gex --add [packages...]   Add new tool dependencies
-	go generate ./tools.go    Build tools
+  go generate ./tools.go    Build tools
   gex [command] [args]      Execute a tool
 
 Flags:`
