@@ -16,9 +16,9 @@ import (
 // If you want to use tools, please run the following command:
 //  go generate ./tools.go
 //
-//go:generate go build -v -o=./bin/protoc-gen-gogofast github.com/gogo/protobuf/protoc-gen-gogofast
-//go:generate go build -v -o=./bin/protoc-gen-grpc-gateway github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-//go:generate go build -v -o=./bin/protoc-gen-swagger github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-//go:generate go build -v -o=./bin/sqlboiler github.com/volatiletech/sqlboiler
-//go:generate go build -v -o=./bin/sqlboiler-psql github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql
+//go:generate go build -v -o=./bin/protoc-gen-gogofast ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+//go:generate go build -v -o=./bin/protoc-gen-grpc-gateway ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+//go:generate go build -v -o=./bin/protoc-gen-swagger ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+//go:generate go build -v -o=./bin/sqlboiler ./vendor/github.com/volatiletech/sqlboiler
+//go:generate go build -v -o=./bin/sqlboiler-psql ./vendor/github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql
 
