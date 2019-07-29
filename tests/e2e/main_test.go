@@ -199,6 +199,8 @@ func CreateTestContainer(t *testing.T, mode TestMode, goVersion string) *TestCon
 		panic("unreachable")
 	}
 
+	tc.cupaloy = tc.cupaloy.WithOptions(cupaloy.SnapshotSubdirectory(".snapshots_" + mode.String()))
+
 	return tc
 }
 
