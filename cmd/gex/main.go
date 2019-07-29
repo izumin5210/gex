@@ -6,8 +6,10 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/izumin5210/gex"
+	"github.com/izumin5210/gex/pkg/tool"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 )
@@ -21,6 +23,7 @@ var (
 	pkgsToBeAdded []string
 	flagBuild     bool
 	flagInit      bool
+	flagRegen     bool
 	flagVersion   bool
 	flagVerbose   bool
 	flagHelp      bool
@@ -31,6 +34,7 @@ func init() {
 	pflag.StringArrayVar(&pkgsToBeAdded, "add", []string{}, "Add new tools")
 	pflag.BoolVar(&flagInit, "init", false, "Initialize tools manifest")
 	pflag.BoolVar(&flagBuild, "build", false, "Build all tools")
+	pflag.BoolVar(&flagRegen, "regen", false, "Regenerate manifest")
 	pflag.BoolVar(&flagVersion, "version", false, "Print the CLI version")
 	pflag.BoolVarP(&flagVerbose, "verbose", "v", false, "Verbose level output")
 	pflag.BoolVarP(&flagHelp, "help", "h", false, "Help for the CLI")
@@ -74,6 +78,16 @@ func run() error {
 		err = toolRepo.BuildAll(ctx)
 	case flagInit:
 		err = toolRepo.Add(ctx, "github.com/izumin5210/gex/cmd/gex")
+	case flagRegen:
+		path := filepath.Join(cfg.RootDir, cfg.ManifestName)
+		m, err := tool.NewParser(cfg.FS, cfg.ManagerType).Parse(path)
+		if err != nil {
+			return errors.Wrapf(err, "%s was not found", path)
+		}
+		err = tool.NewWriter(cfg.FS).Write(path, m)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	case len(args) > 0:
 		err = toolRepo.Run(ctx, args[0], args[1:]...)
 	default:
