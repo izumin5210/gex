@@ -5,6 +5,7 @@ import (
 	"go/token"
 	"strconv"
 
+	"github.com/izumin5210/gex/pkg/manager"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -15,14 +16,16 @@ type Parser interface {
 }
 
 // NewParser creates a new parser instance.
-func NewParser(fs afero.Fs) Parser {
+func NewParser(fs afero.Fs, mType manager.Type) Parser {
 	return &parserImpl{
-		fs: fs,
+		fs:    fs,
+		mType: mType,
 	}
 }
 
 type parserImpl struct {
-	fs afero.Fs
+	fs    afero.Fs
+	mType manager.Type
 }
 
 func (p *parserImpl) Parse(path string) (*Manifest, error) {
@@ -45,5 +48,5 @@ func (p *parserImpl) Parse(path string) (*Manifest, error) {
 		}
 	}
 
-	return NewManifest(tools), nil
+	return NewManifest(tools, p.mType), nil
 }

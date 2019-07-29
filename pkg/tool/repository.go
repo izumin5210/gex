@@ -20,20 +20,22 @@ type Repository interface {
 
 type repositoryImpl struct {
 	*Config
-	parser   Parser
-	writer   Writer
-	executor manager.Executor
-	manager  manager.Interface
+	parser      Parser
+	writer      Writer
+	executor    manager.Executor
+	manager     manager.Interface
+	managerType manager.Type
 }
 
 // NewRepository creates a new Repository instance.
-func NewRepository(executor manager.Executor, manager manager.Interface, cfg *Config) Repository {
+func NewRepository(executor manager.Executor, manager manager.Interface, managerType manager.Type, cfg *Config) Repository {
 	return &repositoryImpl{
-		Config:   cfg,
-		parser:   NewParser(cfg.FS),
-		writer:   NewWriter(cfg.FS),
-		executor: executor,
-		manager:  manager,
+		Config:      cfg,
+		parser:      NewParser(cfg.FS, managerType),
+		writer:      NewWriter(cfg.FS),
+		executor:    executor,
+		manager:     manager,
+		managerType: managerType,
 	}
 }
 
@@ -55,7 +57,7 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 
 	m, err := r.parser.Parse(r.ManifestPath())
 	if err != nil {
-		m = NewManifest([]Tool{})
+		m = NewManifest([]Tool{}, r.managerType)
 	}
 
 	tools := make([]Tool, len(pkgs))

@@ -55,7 +55,7 @@ import (
 //  go generate ./tools.go
 //
 {{- range $t := .Tools}}
-//go:generate go build -v -o=./bin/{{$t.Name}} "{{$t}}"
+//go:generate go build -v -o=./bin/{{$t.Name}} {{if $.ManagerType.Vendor}}./vendor/{{end}}{{$t}}
 {{- end}}
 `))
 )

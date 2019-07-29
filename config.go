@@ -67,7 +67,7 @@ func (c *Config) Create() (tool.Repository, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	return tool.NewRepository(executor, manager, &tool.Config{
+	return tool.NewRepository(executor, manager, c.ManagerType, &tool.Config{
 		FS:           c.FS,
 		WorkingDir:   c.WorkingDir,
 		RootDir:      c.RootDir,

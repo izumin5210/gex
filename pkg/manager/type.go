@@ -20,6 +20,19 @@ const (
 	TypeDep
 )
 
+func (t Type) Vendor() bool { return t == TypeDep }
+
+func (t Type) String() string {
+	switch t {
+	case TypeModules:
+		return "mod"
+	case TypeDep:
+		return "dep"
+	default:
+		return "unknown"
+	}
+}
+
 // DetectType detects a current Mode and sets a root directory.
 func DetectType(workDir string, fs afero.Fs, execer exec.Interface) (t Type, rootDir string) {
 	root, err := FindRoot(workDir, fs, "Gopkg.toml")
