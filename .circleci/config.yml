@@ -1,0 +1,144 @@
+version: 2.1
+
+aliases:
+  filter-all: &filter-all
+    filters:
+      tags:
+        only: /.*/
+  filter-release: &filter-release
+    filters:
+      branches:
+        ignore: /.*/
+      tags:
+        only: /^v\d+\.\d+\.\d+$/
+
+orbs:
+  go-module: timakin/go-module@0.3.0
+  go-crossbuild: izumin5210/go-crossbuild@0.1.1
+  github-release: izumin5210/github-release@0.1.1
+  homebrew: izumin5210/homebrew@0.1.3
+  inline: izumin5210/inline@0.1.0
+
+executors:
+  default:
+    docker:
+    - image: circleci/golang:1.12
+    environment:
+    - GO111MODULE: "on"
+
+commands:
+  test-e2e:
+    parameters:
+      go-version:
+        type: string
+      test-mode:
+        type: string
+    steps:
+    - setup_remote_docker:
+        docker_layer_caching: true
+    - run:
+        command: go test -v ./tests/e2e
+        environment:
+          E2E: 1
+          GO_VERSION: <<parameters.go-version>>
+          TEST_MODE: <<parameters.test-mode>>
+
+workflows:
+  version: 2
+  main:
+    jobs:
+    - go-module/download:
+        <<: *filter-all
+        executor: default
+        persist-to-workspace: true
+        vendoring: true
+
+    - inline/steps:
+        executor: default
+        context: reviewdog
+        name: 'lint'
+        steps:
+        - run: echo 'export PATH=$PWD/bin:$PATH' >> $BASH_ENV
+        - run: go generate ./tools.go
+        - run: reviewdog -reporter=github-pr-review
+        requires:
+        - go-module/download
+
+    - inline/steps:
+        <<: *filter-all
+        executor: default
+        name: 'test'
+        steps:
+        - run: go test -v ./...
+        requires:
+        - go-module/download
+
+    - inline/steps: &test-e2e
+        <<: *filter-all
+        executor: default
+        name: 'E2E (go1.13-rc, mod)'
+        steps:
+        - test-e2e:
+            go-version: '1.13-rc'
+            test-mode: mod
+        requires:
+        - go-module/download
+
+    - inline/steps:
+        <<: *test-e2e
+        name: 'E2E (go1.12, mod)'
+        steps:
+        - test-e2e:
+            go-version: '1.12'
+            test-mode: mod
+
+    - inline/steps:
+        <<: *test-e2e
+        name: 'E2E (go1.12, dep)'
+        steps:
+        - test-e2e:
+            go-version: '1.12'
+            test-mode: dep
+
+    - inline/steps:
+        <<: *test-e2e
+        name: 'E2E (go1.11, mod)'
+        steps:
+        - test-e2e:
+            go-version: '1.11'
+            test-mode: mod
+
+    - inline/steps:
+        <<: *test-e2e
+        name: 'E2E (go1.11, dep)'
+        steps:
+        - test-e2e:
+            go-version: '1.11'
+            test-mode: dep
+
+    - go-crossbuild/build:
+        <<: *filter-all
+        executor: default
+        packages: ./cmd/gex
+        requires:
+        - go-module/download
+
+    - github-release/create:
+        <<: *filter-release
+        executor: default
+        context: tool-releasing
+        requires:
+        - test
+        - 'E2E (go1.13-rc, mod)'
+        - 'E2E (go1.12, mod)'
+        - 'E2E (go1.12, dep)'
+        - 'E2E (go1.11, mod)'
+        - 'E2E (go1.11, dep)'
+        - go-crossbuild/build
+
+    - homebrew/update:
+        <<: *filter-release
+        executor: default
+        context: tool-releasing
+        requires:
+        - github-release/create
