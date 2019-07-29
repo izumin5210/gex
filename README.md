@@ -43,16 +43,21 @@ import (
         _ "github.com/golang/mock/mockgen"
 )
 
+// If you want to use tools, please run the following command:
+//  go generate ./tools.go
+//
+//go:generate go build -v -o=./bin/reviewdog github.com/golang/mock/mockgen
+
 $ cat go.mod | grep mock
         github.com/golang/mock v1.1.1 // indirect
 ```
 
 
-### `gex --build` or `go generate ./tools.go`
+### `go generate ./tools.go`
 Build executable binaries into `$PWD/bin`.
 
 ```
-$ gex --build
+$ go generate ./tools.go
 ```
 
 
