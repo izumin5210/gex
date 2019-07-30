@@ -16,7 +16,6 @@ import (
 
 const (
 	cliName = "gex"
-	version = "v0.4.5"
 )
 
 var (
@@ -71,7 +70,7 @@ func run() error {
 	case len(pkgsToBeAdded) > 0:
 		err = toolRepo.Add(ctx, pkgsToBeAdded...)
 	case flagVersion:
-		fmt.Fprintf(os.Stdout, "%s %s\n", cliName, version)
+		fmt.Fprintf(os.Stdout, "%s %s\n", cliName, gex.Version)
 	case flagHelp:
 		printHelp(os.Stdout)
 	case flagBuild:
