@@ -72,9 +72,20 @@ $ gex mockgen
 
 
 ## Installation
-To install gex, you can use `go get`.
 
+### macOS
+
+```console
+$ brew install izumin5210/tools/gex
 ```
+
+### Other platforms
+
+You can download prebuilt binaries for each platform in the [releases](https://github.com/izumin5210/gex/releases) page.
+
+### Build from source
+
+```console
 $ go get github.com/izumin5210/gex/cmd/gex
 ```
 
