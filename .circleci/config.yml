@@ -58,9 +58,7 @@ workflows:
         context: reviewdog
         name: 'lint'
         steps:
-        - run: echo 'export PATH=$PWD/bin:$PATH' >> $BASH_ENV
-        - run: go generate ./tools.go
-        - run: reviewdog -reporter=github-pr-review
+        - run: make lint
         requires:
         - go-module/download
 
