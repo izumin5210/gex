@@ -1,8 +1,8 @@
 # gex
 
-[![CircleCI](https://circleci.com/gh/izumin5210/gex/tree/master.svg?style=svg)](https://circleci.com/gh/izumin5210/gex/tree/master)
+[![CI](https://github.com/izumin5210/gex/workflows/CI/badge.svg)](https://github.com/izumin5210/gex/actions?workflow=CI)
 [![GoDoc](https://godoc.org/github.com/izumin5210/gex?status.svg)](https://godoc.org/github.com/izumin5210/gex)
-[![Go project version](https://badge.fury.io/go/github.com%2Fizumin5210%2Fgex.svg)](https://badge.fury.io/go/github.com%2Fizumin5210%2Fgex)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/izumin5210/gex)](https://github.com/izumin5210/gex/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/izumin5210/gex)](https://goreportcard.com/report/github.com/izumin5210/gex)
 [![License](https://img.shields.io/github/license/izumin5210/gex.svg)](./LICENSE)
 
