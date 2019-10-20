@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -15,8 +15,7 @@ import (
 	"unicode"
 
 	"github.com/bradleyjkemp/cupaloy/v2"
-	"github.com/ory/dockertest"
-	"github.com/ory/dockertest/docker"
+	"golang.org/x/tools/go/packages/packagestest"
 )
 
 func TestGex_Add(t *testing.T) {
@@ -24,80 +23,60 @@ func TestGex_Add(t *testing.T) {
 		t.Skip("E2E tests are skipped. If you want to run them, you should set `E2E=1`.")
 	}
 
-	goVersion := strings.TrimPrefix(runtime.Version(), "go")
-	if v := os.Getenv("GO_VERSION"); v != "" {
-		goVersion = v
-	}
-	t.Logf("go version: %s", goVersion)
-
 	mode := TestModeMod
 	if v := os.Getenv("MODE"); v != "" {
 		checkErr(t, mode.UnmarshalText([]byte(v)))
 	}
 	t.Logf("test mode: %s", mode)
 
-	tc := CreateTestContainer(t, mode, goVersion)
-	if os.Getenv("DEBUG") != "1" {
-		defer tc.Close(t)
-	}
+	debug := os.Getenv("DEBUG") == "1"
+	t.Logf("debug: %t", debug)
 
+	tc := CreateTestContext(t, mode, debug)
+	defer tc.Close(t)
+
+	invokeE2ETest(t, tc)
+}
+
+func invokeE2ETest(t *testing.T, tc *TestContext) {
 	t.Run("add first tool", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"})
+		tc.ExecCmd(t, "gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add 2 tools", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"gex", "--add", "github.com/srvc/wraperr/cmd/wraperr", "--add", "golang.org/x/lint/golint"})
+		tc.ExecCmd(t, "gex", "--add", "github.com/srvc/wraperr/cmd/wraperr", "--add", "golang.org/x/lint/golint")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add a tool that has already been added", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"})
+		tc.ExecCmd(t, "gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add tools that the tool has the same package has already been added", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger"})
+		tc.ExecCmd(t, "gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add tools included in the same package", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast"})
+		tc.ExecCmd(t, "gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add tools that its root proejct has been added", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"gex", "--add", "github.com/golang/mock/mockgen"})
+		tc.ExecCmd(t, "gex", "--add", "github.com/golang/mock/mockgen")
 		tc.SnapshotManifest(t)
 	})
 
-	checkBinaries := func(t *testing.T, bins []string) {
-		t.Helper()
-		buf := new(bytes.Buffer)
-		tc.ExecCmd(t, []string{"ls", "-1", "./bin"}, buf, ioutil.Discard)
-		var gotBins []string
-		for _, b := range strings.Split(buf.String(), "\n") {
-			if len(b) > 0 && b != "." {
-				gotBins = append(gotBins, b)
-			}
-		}
-		sort.Strings(gotBins)
-		wantBins := bins[:]
-		sort.Strings(wantBins)
-
-		if got, want := gotBins, wantBins; !reflect.DeepEqual(got, want) {
-			t.Errorf("generated bins list is %v, want %v", got, want)
-		}
-	}
-
 	t.Run("generated binaries with `gex --add`", func(t *testing.T) {
-		checkBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
+		tc.CheckBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
 	})
 
 	t.Run("generated binaries with `go generate`", func(t *testing.T) {
-		tc.CheckCmd(t, []string{"rm", "-vrf", "./bin"})
-		tc.CheckCmd(t, []string{"go", "generate", "tools.go"})
-		checkBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
+		tc.ExecCmd(t, "rm", "-vrf", "./bin")
+		tc.ExecCmd(t, "go", "generate", "tools.go")
+		tc.CheckBinaries(t, []string{"protoc-gen-grpc-gateway", "wraperr", "golint", "protoc-gen-swagger", "protoc-gen-gogo", "protoc-gen-gogofast", "mockgen"})
 	})
 }
 
@@ -139,113 +118,123 @@ func (tm *TestMode) UnmarshalText(text []byte) error {
 	return nil
 }
 
-type TestContainer struct {
-	pool     *dockertest.Pool
-	resource *dockertest.Resource
-	cupaloy  *cupaloy.Config
+func (tm TestMode) Exporter() packagestest.Exporter {
+	switch tm {
+	case TestModeMod:
+		return packagestest.Modules
+	case TestModeDep:
+		return packagestest.GOPATH
+	default:
+		panic("unreachable")
+	}
 }
 
-func CreateTestContainer(t *testing.T, mode TestMode, goVersion string) *TestContainer {
-	wd, err := os.Getwd()
-	checkErr(t, err)
-
-	pool, err := dockertest.NewPool("")
-	checkErr(t, err)
-
-	imageTag := "go-" + goVersion
-	imageName := "github.com/izumin5210/gex/tests/e2e"
-
-	buildArgs := []docker.BuildArg{{Name: "GO_VERSION", Value: goVersion}}
-
-	switch mode {
-	case TestModeMod:
-		buildArgs = append(buildArgs, docker.BuildArg{Name: "GO111MODULE", Value: "on"})
-	case TestModeDep:
-		buildArgs = append(buildArgs, docker.BuildArg{Name: "GO111MODULE", Value: "off"})
-	default:
-		panic("unreachable")
-	}
-
-	err = pool.Client.BuildImage(docker.BuildImageOptions{
-		Name:         imageName + ":" + imageTag,
-		Dockerfile:   filepath.Join("tests", "e2e", "Dockerfile"),
-		ContextDir:   filepath.Join(wd, "..", ".."),
-		BuildArgs:    buildArgs,
-		OutputStream: NewTestWriter(t),
-		ErrorStream:  NewTestWriter(t),
-	})
-	checkErr(t, err)
-
-	res, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: imageName,
-		Tag:        imageTag,
-		Cmd:        []string{"tail", "-f", "/dev/null"},
-	})
-	checkErr(t, err)
-
-	tc := &TestContainer{
-		pool:     pool,
-		resource: res,
-		cupaloy:  cupaloy.Global,
-	}
-
-	switch mode {
-	case TestModeMod:
-		tc.CheckCmd(t, []string{"go", "mod", "init"})
-	case TestModeDep:
-		tc.CheckCmd(t, []string{"sh", "-c", "curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh"})
-		tc.CheckCmd(t, []string{"dep", "init", "-v"})
-	default:
-		panic("unreachable")
-	}
-
-	tc.cupaloy = tc.cupaloy.WithOptions(cupaloy.SnapshotSubdirectory(".snapshots_" + mode.String()))
-
+func CreateTestContext(t *testing.T, mode TestMode, debug bool) *TestContext {
+	t.Helper()
+	tc := &TestContext{mode: mode, debug: debug}
+	tc.initialize(t)
 	return tc
 }
 
-func (tc *TestContainer) Close(t *testing.T) {
-	t.Helper()
-	checkErr(t, tc.resource.Close())
+type TestContext struct {
+	mode     TestMode
+	exported *packagestest.Exported
+	debug    bool
 }
 
-func (tc *TestContainer) ExecCmd(t *testing.T, cmd []string, outW, errW io.Writer) {
+func (tc *TestContext) initialize(t *testing.T) {
 	t.Helper()
 
-	exec, err := tc.pool.Client.CreateExec(docker.CreateExecOptions{
-		AttachStdout: true,
-		AttachStderr: true,
-		Container:    tc.resource.Container.ID,
-		Cmd:          cmd,
+	tc.exported = packagestest.Export(t, tc.mode.Exporter(), []packagestest.Module{
+		{Name: "sampleapp", Files: map[string]interface{}{".keep": "", "main.go": "package main"}},
 	})
-	checkErr(t, err)
 
-	err = tc.pool.Client.StartExec(exec.ID, docker.StartExecOptions{
-		OutputStream: outW,
-		ErrorStream:  errW,
-	})
-	checkErr(t, err)
+	if tc.mode == TestModeDep {
+		tc.exported.Config.Dir = filepath.Join(tc.exported.Config.Dir, "sampleapp")
+	}
 
-	resp, err := tc.pool.Client.InspectExec(exec.ID)
-	checkErr(t, err)
+	t.Logf("root directory: %s", tc.rootDir())
 
-	if resp.ExitCode != 0 {
-		t.Fatalf("exit code %d: %v", resp.ExitCode, cmd)
+	switch tc.mode {
+	case TestModeMod:
+		// no-op
+	case TestModeDep:
+		fmt.Println(tc.environ())
+		tc.ExecCmd(t, "dep", "init", "-v")
+	default:
+		panic("unreachable")
 	}
 }
 
-func (tc *TestContainer) CheckCmd(t *testing.T, cmd []string) {
-	t.Helper()
-	tc.ExecCmd(t, cmd, NewTestWriter(t), NewTestWriter(t))
+func (tc *TestContext) Close(t *testing.T) {
+	if tc.debug {
+		t.Log("Keep the test environment on debug mode")
+		return
+	}
+	tc.exported.Cleanup()
 }
 
-func (tc *TestContainer) SnapshotManifest(t *testing.T) {
+func (tc *TestContext) rootDir() string {
+	return tc.exported.Config.Dir
+}
+
+func (tc *TestContext) environ() []string {
+	env := make([]string, 0, len(tc.exported.Config.Env))
+	for _, kv := range tc.exported.Config.Env {
+		if strings.HasPrefix(kv, "GOPROXY=") {
+			continue
+		}
+		if tc.mode == TestModeDep && runtime.GOOS == "darwin" && strings.HasPrefix(kv, "GOPATH=/var") {
+			kv = strings.Replace(kv, "GOPATH=/var", "GOPATH=/private/var", 1)
+		}
+		env = append(env, kv)
+	}
+	return env
+}
+
+func (tc *TestContext) SnapshotManifest(t *testing.T) {
 	t.Helper()
 	t.Run("tools.go", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		tc.ExecCmd(t, []string{"cat", "/go/src/myapp/tools.go"}, buf, buf)
-		tc.cupaloy.SnapshotT(t, buf.String())
+		data, err := ioutil.ReadFile(filepath.Join(tc.rootDir(), "tools.go"))
+		checkErr(t, err)
+		tc.snapshot(t, string(data))
 	})
+}
+
+func (tc *TestContext) CheckBinaries(t *testing.T, wantBins []string) {
+	dir := filepath.Join(tc.rootDir(), "bin")
+	files, err := ioutil.ReadDir(dir)
+	checkErr(t, err)
+	var gotBins []string
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		gotBins = append(gotBins, f.Name())
+	}
+	sort.Strings(gotBins)
+	sort.Strings(wantBins)
+	if got, want := gotBins, wantBins; !reflect.DeepEqual(got, want) {
+		t.Errorf("generated bins list is %v, want %v", got, want)
+	}
+}
+
+func (tc *TestContext) snapshot(t *testing.T, v ...interface{}) {
+	t.Helper()
+	cupaloy.Global.
+		WithOptions(
+			cupaloy.SnapshotSubdirectory(".snapshots_"+tc.mode.String()),
+		).
+		SnapshotT(t, v...)
+}
+
+func (tc *TestContext) ExecCmd(t *testing.T, name string, args ...string) {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = tc.rootDir()
+	cmd.Env = tc.environ()
+	cmd.Stdout = NewTestWriter(t)
+	cmd.Stderr = NewTestWriter(t)
+	checkErr(t, cmd.Run())
 }
 
 func NewTestWriter(t *testing.T) io.Writer {
