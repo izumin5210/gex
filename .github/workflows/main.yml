@@ -1,0 +1,35 @@
+name: CI
+on: [push]
+jobs:
+
+  test-e2e:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ['1.12.x', '1.13.x']
+        test-mode: ['mod', 'dep']
+      fail-fast: false
+
+    steps:
+    - uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+      env:
+        GOPATH: /home/runner/go
+
+    - uses: actions/checkout@v1
+
+    - run: |
+        mkdir -p $GOPATH/bin
+        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+        echo ::add-path::$GOPATH/bin
+      if: matrix.test-mode == 'dep'
+
+    - run: go mod download
+
+    - run: go test -v .
+      env:
+        E2E: 1
+        MODE: ${{ matrix.test-mode }}
+      working-directory: ./tests/e2e

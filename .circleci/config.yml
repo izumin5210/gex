@@ -26,23 +26,6 @@ executors:
     environment:
     - GO111MODULE: "on"
 
-commands:
-  test-e2e:
-    parameters:
-      go-version:
-        type: string
-      test-mode:
-        type: string
-    steps:
-    - setup_remote_docker:
-        docker_layer_caching: true
-    - run:
-        command: go test -v ./tests/e2e
-        environment:
-          E2E: 1
-          GO_VERSION: <<parameters.go-version>>
-          TEST_MODE: <<parameters.test-mode>>
-
 workflows:
   version: 2
   main:
@@ -71,49 +54,6 @@ workflows:
         requires:
         - go-module/download
 
-    - inline/steps: &test-e2e
-        <<: *filter-all
-        executor: default
-        name: 'E2E (go1.13-rc, mod)'
-        steps:
-        - test-e2e:
-            go-version: '1.13-rc'
-            test-mode: mod
-        requires:
-        - go-module/download
-
-    - inline/steps:
-        <<: *test-e2e
-        name: 'E2E (go1.12, mod)'
-        steps:
-        - test-e2e:
-            go-version: '1.12'
-            test-mode: mod
-
-    - inline/steps:
-        <<: *test-e2e
-        name: 'E2E (go1.12, dep)'
-        steps:
-        - test-e2e:
-            go-version: '1.12'
-            test-mode: dep
-
-    - inline/steps:
-        <<: *test-e2e
-        name: 'E2E (go1.11, mod)'
-        steps:
-        - test-e2e:
-            go-version: '1.11'
-            test-mode: mod
-
-    - inline/steps:
-        <<: *test-e2e
-        name: 'E2E (go1.11, dep)'
-        steps:
-        - test-e2e:
-            go-version: '1.11'
-            test-mode: dep
-
     - go-crossbuild/build:
         <<: *filter-all
         executor: default
@@ -127,11 +67,6 @@ workflows:
         context: tool-releasing
         requires:
         - test
-        - 'E2E (go1.13-rc, mod)'
-        - 'E2E (go1.12, mod)'
-        - 'E2E (go1.12, dep)'
-        - 'E2E (go1.11, mod)'
-        - 'E2E (go1.11, dep)'
         - go-crossbuild/build
 
     - homebrew/update:

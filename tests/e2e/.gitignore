@@ -1,5 +1,0 @@
-bin
-vendor
-tools.go
-Gopkg.*
-go.*
