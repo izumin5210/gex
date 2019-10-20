@@ -137,16 +137,45 @@ func CreateTestContext(t *testing.T, mode TestMode, debug bool) *TestContext {
 }
 
 type TestContext struct {
-	mode     TestMode
-	exported *packagestest.Exported
-	debug    bool
+	mode      TestMode
+	exported  *packagestest.Exported
+	debug     bool
+	gexBinDir string
+	closers   []func(t *testing.T)
 }
 
 func (tc *TestContext) initialize(t *testing.T) {
 	t.Helper()
 
+	// build gex
+	{
+		_, filename, _, _ := runtime.Caller(0)
+		projRoot := filepath.Dir(filepath.Dir(filepath.Dir(filename)))
+		binDir := filepath.Join(projRoot, "bin")
+		gexCmd := filepath.Join(binDir, "gex")
+		cmd := exec.Command("go", "build", "-v", "-o", gexCmd, "./cmd/gex")
+		cmd.Dir = projRoot
+		cmd.Stdout = NewTestWriter(t)
+		cmd.Stderr = NewTestWriter(t)
+		checkErr(t, cmd.Run())
+		tc.gexBinDir = binDir
+
+		oldPath := os.Getenv("PATH")
+		checkErr(t, os.Setenv("PATH", binDir+string(filepath.ListSeparator)+oldPath))
+		tc.closers = append(tc.closers, func(t *testing.T) { checkErr(t, os.Setenv("PATH", oldPath)) })
+
+		t.Logf("gex binary: %s", gexCmd)
+	}
+
 	tc.exported = packagestest.Export(t, tc.mode.Exporter(), []packagestest.Module{
 		{Name: "sampleapp", Files: map[string]interface{}{".keep": "", "main.go": "package main"}},
+	})
+	tc.closers = append(tc.closers, func(t *testing.T) {
+		if tc.debug {
+			t.Log("Keep the test environment on debug mode")
+			return
+		}
+		tc.exported.Cleanup()
 	})
 
 	if tc.mode == TestModeDep {
@@ -159,7 +188,6 @@ func (tc *TestContext) initialize(t *testing.T) {
 	case TestModeMod:
 		// no-op
 	case TestModeDep:
-		fmt.Println(tc.environ())
 		tc.ExecCmd(t, "dep", "init", "-v")
 	default:
 		panic("unreachable")
@@ -167,11 +195,9 @@ func (tc *TestContext) initialize(t *testing.T) {
 }
 
 func (tc *TestContext) Close(t *testing.T) {
-	if tc.debug {
-		t.Log("Keep the test environment on debug mode")
-		return
+	for i := len(tc.closers) - 1; i >= 0; i-- {
+		tc.closers[i](t)
 	}
-	tc.exported.Cleanup()
 }
 
 func (tc *TestContext) rootDir() string {
