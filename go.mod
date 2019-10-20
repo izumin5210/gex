@@ -11,6 +11,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/google/go-cmp v0.2.0
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
+	github.com/izumin5210/execx v0.1.0
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
@@ -21,7 +22,7 @@ require (
 	github.com/spf13/afero v1.1.1
 	github.com/spf13/pflag v1.0.2
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a // indirect
-	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e // indirect
 	gotest.tools v2.2.0+incompatible // indirect
-	k8s.io/utils v0.0.0-20181011165025-cd6a8f44fe79
 )
+
+go 1.13

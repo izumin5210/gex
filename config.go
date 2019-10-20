@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/izumin5210/execx"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"k8s.io/utils/exec"
 
 	"github.com/izumin5210/gex/pkg/manager"
 	"github.com/izumin5210/gex/pkg/manager/dep"
@@ -22,8 +22,8 @@ type Config struct {
 	ErrWriter io.Writer
 	InReader  io.Reader
 
-	FS     afero.Fs
-	Execer exec.Interface
+	FS   afero.Fs
+	Exec *execx.Executor
 
 	WorkingDir   string
 	RootDir      string
@@ -48,13 +48,13 @@ func createDefaultConfig() *Config {
 		ErrWriter:    os.Stderr,
 		InReader:     os.Stdin,
 		FS:           afero.NewOsFs(),
-		Execer:       exec.New(),
+		Exec:         execx.New(),
 		WorkingDir:   wd,
 		ManifestName: "tools.go",
 		BinDirName:   "bin",
 		Logger:       log.New(ioutil.Discard, "", 0),
 	}
-	cfg.ManagerType, cfg.RootDir = manager.DetectType(cfg.WorkingDir, cfg.FS, cfg.Execer)
+	cfg.ManagerType, cfg.RootDir = manager.DetectType(cfg.WorkingDir, cfg.FS, cfg.Exec)
 	return cfg
 }
 
@@ -93,8 +93,8 @@ func (c *Config) setDefaultsIfNeeded() {
 	if c.FS == nil {
 		c.FS = d.FS
 	}
-	if c.Execer == nil {
-		c.Execer = d.Execer
+	if c.Exec == nil {
+		c.Exec = d.Exec
 	}
 	if c.WorkingDir == "" {
 		c.WorkingDir = d.WorkingDir
@@ -110,7 +110,7 @@ func (c *Config) setDefaultsIfNeeded() {
 	}
 
 	if c.ManagerType == manager.TypeUnknown {
-		c.ManagerType, c.RootDir = manager.DetectType(c.WorkingDir, c.FS, c.Execer)
+		c.ManagerType, c.RootDir = manager.DetectType(c.WorkingDir, c.FS, c.Exec)
 	}
 
 	if rootDir, err := manager.FindRoot(c.WorkingDir, c.FS, c.ManifestName); err == nil {
@@ -125,7 +125,7 @@ func (c *Config) createManager() (
 	manager.Executor,
 	error,
 ) {
-	executor := manager.NewExecutor(c.Execer, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Logger)
+	executor := manager.NewExecutor(c.Exec, c.OutWriter, c.ErrWriter, c.InReader, c.WorkingDir, c.Logger)
 	var (
 		m manager.Interface
 	)
