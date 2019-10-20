@@ -1,14 +1,16 @@
 package manager_test
 
 import (
+	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/izumin5210/execx"
 	"github.com/spf13/afero"
-	"k8s.io/utils/exec"
-	testingexec "k8s.io/utils/exec/testing"
 
 	"github.com/izumin5210/gex/pkg/manager"
 )
@@ -21,30 +23,21 @@ func TestDetectType(t *testing.T) {
 		os.Unsetenv("GO111MODULE")
 	}
 
-	checkGoEnvCmd := func(t *testing.T, cmd string, args []string) {
+	checkGoEnvCmd := func(t *testing.T, args []string) {
 		t.Helper()
-		if diff := cmp.Diff(append([]string{cmd}, args...), []string{"go", "env", "GOMOD"}); diff != "" {
-			t.Errorf("execed differs: (-want +got)\n%s", diff)
+		if diff := cmp.Diff(args, []string{"go", "env", "GOMOD"}); diff != "" {
+			t.Errorf("args differs: (-want +got)\n%s", diff)
 		}
 	}
-	createFakeCmd := func(t *testing.T, out string) exec.Cmd {
+	createExec := func(t *testing.T, out string) *execx.Executor {
 		t.Helper()
-		return &testingexec.FakeCmd{
-			CombinedOutputScript: []testingexec.FakeCombinedOutputAction{
-				func() ([]byte, error) { return []byte(out + "\n"), nil },
-			},
-		}
-	}
-	createExecer := func(t *testing.T, out string) exec.Interface {
-		t.Helper()
-		return &testingexec.FakeExec{
-			CommandScript: []testingexec.FakeCommandAction{
-				func(cmd string, args ...string) exec.Cmd {
-					checkGoEnvCmd(t, cmd, args)
-					return createFakeCmd(t, out)
-				},
-			},
-		}
+		return execx.New(
+			execx.WithFakeProcess(func(_ context.Context, cmd *exec.Cmd) error {
+				checkGoEnvCmd(t, cmd.Args)
+				fmt.Fprintln(cmd.Stdout, out+"\n")
+				return nil
+			}),
+		)
 	}
 	dieIf := func(t *testing.T, err error) {
 		t.Helper()
@@ -62,21 +55,21 @@ func TestDetectType(t *testing.T) {
 	cases := []struct {
 		test   string
 		fs     afero.Fs
-		execer exec.Interface
+		execer *execx.Executor
 		typ    manager.Type
 		root   string
 	}{
 		{
 			test:   "modules",
 			fs:     createFS(t),
-			execer: createExecer(t, filepath.Join(wd, "go.mod")),
+			execer: createExec(t, filepath.Join(wd, "go.mod")),
 			typ:    manager.TypeModules,
 			root:   wd,
 		},
 		{
 			test:   "modules from subdirectory",
 			fs:     createFS(t),
-			execer: createExecer(t, filepath.Join(filepath.Dir(wd), "go.mod")),
+			execer: createExec(t, filepath.Join(filepath.Dir(wd), "go.mod")),
 			typ:    manager.TypeModules,
 			root:   filepath.Dir(wd),
 		},
@@ -88,7 +81,7 @@ func TestDetectType(t *testing.T) {
 				dieIf(t, afero.WriteFile(fs, path, []byte(""), 0644))
 				return fs
 			}(),
-			execer: createExecer(t, ""),
+			execer: createExec(t, ""),
 			typ:    manager.TypeDep,
 			root:   wd,
 		},
@@ -100,14 +93,14 @@ func TestDetectType(t *testing.T) {
 				dieIf(t, afero.WriteFile(fs, path, []byte(""), 0644))
 				return fs
 			}(),
-			execer: createExecer(t, ""),
+			execer: createExec(t, ""),
 			typ:    manager.TypeDep,
 			root:   filepath.Dir(wd),
 		},
 		{
 			test:   "unknown",
 			fs:     createFS(t),
-			execer: createExecer(t, ""),
+			execer: createExec(t, ""),
 			typ:    manager.TypeUnknown,
 		},
 	}
