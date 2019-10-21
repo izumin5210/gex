@@ -8,26 +8,7 @@ jobs:
     strategy:
       matrix:
         go-version: ['1.12.x', '1.13.x']
-      fail-fast: false
-
-    steps:
-    - uses: actions/setup-go@v1
-      with:
-        go-version: ${{ matrix.go-version }}
-
-    - uses: actions/checkout@v1
-
-    - run: go mod download
-
-    - run: go test -v -race ./...
-
-  test-e2e:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        go-version: ['1.12.x', '1.13.x']
-        test-mode: ['mod', 'dep']
+        test-type: ['unit', 'e2e-dep', 'e2e-mod']
       fail-fast: false
 
     steps:
@@ -39,19 +20,24 @@ jobs:
 
     - uses: actions/checkout@v1
 
+    - run: go mod download
+
     - run: |
         mkdir -p $GOPATH/bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         echo ::add-path::$GOPATH/bin
-      if: matrix.test-mode == 'dep'
+      if: matrix.test-type == 'e2e-dep'
 
-    - run: go mod download
+    - run: go test -v -race ./...
+      if: matrix.test-type == 'unit'
 
-    - run: go test -v .
-      env:
-        E2E: 1
-        MODE: ${{ matrix.test-mode }}
+    - run: go test -v -run Mod ./...
       working-directory: ./tests/e2e
+      if: matrix.test-type == 'e2e-mod'
+
+    - run: go test -v -run Dep ./...
+      working-directory: ./tests/e2e
+      if: matrix.test-type == 'e2e-dep'
 
   build:
     runs-on: ubuntu-latest
