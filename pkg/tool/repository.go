@@ -50,10 +50,6 @@ func (r *repositoryImpl) List(ctx context.Context) ([]Tool, error) {
 
 func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 	r.Log.Println("add", strings.Join(pkgs, ", "))
-	err := r.manager.Add(ctx, pkgs, r.Verbose)
-	if err != nil {
-		return errors.Wrap(err, "failed to add tools")
-	}
 
 	m, err := r.parser.Parse(r.ManifestPath())
 	if err != nil {
