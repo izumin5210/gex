@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -18,54 +17,47 @@ import (
 	"golang.org/x/tools/go/packages/packagestest"
 )
 
-func TestGex_Add(t *testing.T) {
-	if os.Getenv("E2E") != "1" {
-		t.Skip("E2E tests are skipped. If you want to run them, you should set `E2E=1`.")
-	}
-
-	mode := TestModeMod
-	if v := os.Getenv("MODE"); v != "" {
-		checkErr(t, mode.UnmarshalText([]byte(v)))
-	}
-	t.Logf("test mode: %s", mode)
-
-	debug := os.Getenv("DEBUG") == "1"
-	t.Logf("debug: %t", debug)
-
-	tc := CreateTestContext(t, mode, debug)
-	defer tc.Close(t)
-
-	invokeE2ETest(t, tc)
+func TestGex_Mod(t *testing.T) {
+	invokeE2ETest(t, TestModeMod)
 }
 
-func invokeE2ETest(t *testing.T, tc *TestContext) {
+func TestGex_Dep(t *testing.T) {
+	invokeE2ETest(t, TestModeDep)
+}
+
+func invokeE2ETest(t *testing.T, tm TestMode) {
+	t.Helper()
+
+	tc := CreateTestContext(t, tm, debug)
+	defer tc.Close(t)
+
 	t.Run("add first tool", func(t *testing.T) {
-		tc.ExecCmd(t, "gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway")
+		tc.ExecCmd(t, gexCmd, "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add 2 tools", func(t *testing.T) {
-		tc.ExecCmd(t, "gex", "--add", "github.com/srvc/wraperr/cmd/wraperr", "--add", "golang.org/x/lint/golint")
+		tc.ExecCmd(t, gexCmd, "--add", "github.com/srvc/wraperr/cmd/wraperr", "--add", "golang.org/x/lint/golint")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add a tool that has already been added", func(t *testing.T) {
-		tc.ExecCmd(t, "gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway")
+		tc.ExecCmd(t, gexCmd, "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add tools that the tool has the same package has already been added", func(t *testing.T) {
-		tc.ExecCmd(t, "gex", "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger")
+		tc.ExecCmd(t, gexCmd, "--add", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add tools included in the same package", func(t *testing.T) {
-		tc.ExecCmd(t, "gex", "--add", "github.com/gogo/protobuf/protoc-gen-gogo", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast")
+		tc.ExecCmd(t, gexCmd, "--add", "github.com/gogo/protobuf/protoc-gen-gogo", "--add", "github.com/gogo/protobuf/protoc-gen-gogofast")
 		tc.SnapshotManifest(t)
 	})
 
 	t.Run("add tools that its root proejct has been added", func(t *testing.T) {
-		tc.ExecCmd(t, "gex", "--add", "github.com/golang/mock/mockgen")
+		tc.ExecCmd(t, gexCmd, "--add", "github.com/golang/mock/mockgen")
 		tc.SnapshotManifest(t)
 	})
 
@@ -90,7 +82,7 @@ func checkErr(t *testing.T, err error) {
 type TestMode int
 
 const (
-	TestModeUnknown TestMode = iota
+	_ TestMode = iota
 	TestModeMod
 	TestModeDep
 )
@@ -102,20 +94,8 @@ func (tm TestMode) String() string {
 	case TestModeDep:
 		return "dep"
 	default:
-		return "unknown"
+		panic("unreachable")
 	}
-}
-
-func (tm *TestMode) UnmarshalText(text []byte) error {
-	switch string(text) {
-	case "mod":
-		*tm = TestModeMod
-	case "dep":
-		*tm = TestModeDep
-	default:
-		return fmt.Errorf("unknown mode: %s", text)
-	}
-	return nil
 }
 
 func (tm TestMode) Exporter() packagestest.Exporter {
@@ -132,40 +112,48 @@ func (tm TestMode) Exporter() packagestest.Exporter {
 func CreateTestContext(t *testing.T, mode TestMode, debug bool) *TestContext {
 	t.Helper()
 	tc := &TestContext{mode: mode, debug: debug}
-	tc.initialize(t)
+	tc.setupSandbox(t)
 	return tc
 }
 
 type TestContext struct {
-	mode      TestMode
-	exported  *packagestest.Exported
-	debug     bool
-	gexBinDir string
-	closers   []func(t *testing.T)
+	mode     TestMode
+	exported *packagestest.Exported
+	debug    bool
+	closers  []func(t *testing.T)
 }
 
-func (tc *TestContext) initialize(t *testing.T) {
-	t.Helper()
+var (
+	gexCmd string
+	debug  bool
+)
 
-	// build gex
-	{
-		_, filename, _, _ := runtime.Caller(0)
-		projRoot := filepath.Dir(filepath.Dir(filepath.Dir(filename)))
-		binDir := filepath.Join(projRoot, "bin")
-		gexCmd := filepath.Join(binDir, "gex")
-		cmd := exec.Command("go", "build", "-v", "-o", gexCmd, "./cmd/gex")
-		cmd.Dir = projRoot
-		cmd.Stdout = NewTestWriter(t)
-		cmd.Stderr = NewTestWriter(t)
-		checkErr(t, cmd.Run())
-		tc.gexBinDir = binDir
+func TestMain(m *testing.M) {
+	debug = os.Getenv("DEBUG") == "1"
 
-		oldPath := os.Getenv("PATH")
-		checkErr(t, os.Setenv("PATH", binDir+string(filepath.ListSeparator)+oldPath))
-		tc.closers = append(tc.closers, func(t *testing.T) { checkErr(t, os.Setenv("PATH", oldPath)) })
+	_, filename, _, _ := runtime.Caller(0)
+	projRoot := filepath.Dir(filepath.Dir(filepath.Dir(filename)))
+	binDir := filepath.Join(projRoot, "bin")
 
-		t.Logf("gex binary: %s", gexCmd)
+	gexCmd = filepath.Join(binDir, "gex")
+
+	cmd := exec.Command("go", "build", "-v", "-o", gexCmd, "./cmd/gex")
+	cmd.Dir = projRoot
+	if debug {
+		cmd.Stdout = os.Stdout
+		cmd.Stdout = os.Stderr
 	}
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	exitCode := m.Run()
+	defer os.Exit(exitCode)
+}
+
+func (tc *TestContext) setupSandbox(t *testing.T) {
+	t.Helper()
 
 	tc.exported = packagestest.Export(t, tc.mode.Exporter(), []packagestest.Module{
 		{Name: "sampleapp", Files: map[string]interface{}{".keep": "", "main.go": "package main"}},
@@ -223,7 +211,7 @@ func (tc *TestContext) SnapshotManifest(t *testing.T) {
 	t.Run("tools.go", func(t *testing.T) {
 		data, err := ioutil.ReadFile(filepath.Join(tc.rootDir(), "tools.go"))
 		checkErr(t, err)
-		tc.snapshot(t, string(data))
+		cupaloy.SnapshotT(t, string(data))
 	})
 }
 
@@ -243,15 +231,6 @@ func (tc *TestContext) CheckBinaries(t *testing.T, wantBins []string) {
 	if got, want := gotBins, wantBins; !reflect.DeepEqual(got, want) {
 		t.Errorf("generated bins list is %v, want %v", got, want)
 	}
-}
-
-func (tc *TestContext) snapshot(t *testing.T, v ...interface{}) {
-	t.Helper()
-	cupaloy.Global.
-		WithOptions(
-			cupaloy.SnapshotSubdirectory(".snapshots_"+tc.mode.String()),
-		).
-		SnapshotT(t, v...)
 }
 
 func (tc *TestContext) ExecCmd(t *testing.T, name string, args ...string) {
