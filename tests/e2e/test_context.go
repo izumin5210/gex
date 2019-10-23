@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -117,12 +118,20 @@ func (tc *TestContext) RemoveBinaries(t *testing.T) {
 	tc.checkErr(t, os.RemoveAll(tc.binDir()))
 }
 
+func (tc *TestContext) Bin(name string) string {
+	return filepath.Join(tc.binDir(), name)
+}
+
 func (tc *TestContext) ExecCmd(t *testing.T, name string, args ...string) {
+	tc.ExecCmdWithOut(t, name, args, NewTestWriter(t), NewTestWriter(t))
+}
+
+func (tc *TestContext) ExecCmdWithOut(t *testing.T, name string, args []string, outW, errW io.Writer) {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = tc.rootDir()
 	cmd.Env = tc.environ()
-	cmd.Stdout = NewTestWriter(t)
-	cmd.Stderr = NewTestWriter(t)
+	cmd.Stdout = outW
+	cmd.Stderr = errW
 	tc.checkErr(t, cmd.Run())
 }
 
