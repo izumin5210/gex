@@ -6,15 +6,15 @@ package tools
 
 // tool dependencies
 import (
+	_ "github.com/golang/mock/mockgen"
 	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"
-	_ "github.com/srvc/wraperr/cmd/wraperr"
 	_ "golang.org/x/lint/golint"
 )
 
 // If you want to use tools, please run the following command:
 //  go generate ./tools.go
 //
+//go:generate go build -v -o=./bin/mockgen ./vendor/github.com/golang/mock/mockgen
 //go:generate go build -v -o=./bin/protoc-gen-grpc-gateway ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-//go:generate go build -v -o=./bin/wraperr ./vendor/github.com/srvc/wraperr/cmd/wraperr
 //go:generate go build -v -o=./bin/golint ./vendor/golang.org/x/lint/golint
 
