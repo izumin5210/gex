@@ -19,6 +19,15 @@ type managerImpl struct {
 	executor manager.Executor
 }
 
+func (m *managerImpl) Add(ctx context.Context, pkgs []string, verbose bool) error {
+	args := []string{"get"}
+	if verbose {
+		args = append(args, "-v")
+	}
+	args = append(args, pkgs...)
+	return errors.WithStack(m.executor.Exec(ctx, "go", args...))
+}
+
 func (m *managerImpl) Build(ctx context.Context, binPath, pkg string, verbose bool) error {
 	args := []string{"build", "-o", binPath}
 	if verbose {
