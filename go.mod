@@ -9,5 +9,4 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/text v0.3.0 // indirect
 )
