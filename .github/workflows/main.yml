@@ -7,7 +7,7 @@ jobs:
 
     strategy:
       matrix:
-        go-version: ['1.12.x', '1.13.x']
+        go-version: ['1.12.x', '1.13.x', '1.14.x']
         test-type: ['unit', 'e2e-dep', 'e2e-mod']
       fail-fast: false
 
@@ -44,7 +44,7 @@ jobs:
     steps:
     - uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.14
 
     - uses: actions/checkout@v1
 
