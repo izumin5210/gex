@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	stderrors "errors"
 	"fmt"
 	"io"
 	"log"
@@ -76,8 +75,7 @@ func run() error {
 		printHelp(os.Stdout)
 	case flagBuild:
 		err = toolRepo.BuildAll(ctx)
-		var errs *tool.BuildErrors
-		if stderrors.As(err, &errs) {
+		if errs := asBuildErrors(err); errs != nil {
 			for _, err := range errs.Errs {
 				fmt.Fprintln(os.Stdout, err.Error())
 			}
