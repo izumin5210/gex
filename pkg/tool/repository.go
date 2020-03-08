@@ -3,6 +3,7 @@ package tool
 import (
 	"context"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -116,11 +117,27 @@ func (r *repositoryImpl) BuildAll(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
+	var (
+		wg   sync.WaitGroup
+		errs BuildErrors
+	)
+
 	for _, t := range m.Tools() {
-		_, err = r.Build(ctx, t)
-		if err != nil {
-			return errors.WithStack(err)
-		}
+		t := t
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err = r.Build(ctx, t)
+			if err != nil {
+				errs.Append(t, err)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if !errs.Empty() {
+		return &errs
 	}
 
 	return nil

@@ -75,6 +75,13 @@ func run() error {
 		printHelp(os.Stdout)
 	case flagBuild:
 		err = toolRepo.BuildAll(ctx)
+		if errs := asBuildErrors(err); errs != nil {
+			for _, err := range errs.Errs {
+				fmt.Fprintln(os.Stdout, err.Error())
+			}
+			return errors.New("failed to build tools")
+		}
+		return err
 	case flagInit:
 		err = toolRepo.Add(ctx, "github.com/izumin5210/gex/cmd/gex")
 	case flagRegen:
