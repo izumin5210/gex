@@ -1,0 +1,25 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "20:00"
+  open-pull-requests-limit: 10
+  reviewers:
+  - izumin5210
+  ignore:
+  - dependency-name: github.com/spf13/afero
+    versions:
+    - 1.5.1
+  - dependency-name: github.com/google/go-cmp
+    versions:
+    - 0.5.4
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "20:00"
+  open-pull-requests-limit: 10
+  reviewers:
+  - izumin5210
