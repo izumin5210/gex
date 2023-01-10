@@ -14,6 +14,7 @@ import (
 type Repository interface {
 	List(ctx context.Context) ([]Tool, error)
 	Add(ctx context.Context, pkgs ...string) error
+	AddOpt(ctx context.Context, buildMode BuildMode, pkgs ...string) error
 	Build(ctx context.Context, t Tool) (string, error)
 	BuildAll(ctx context.Context) error
 	Run(ctx context.Context, name string, args ...string) error
@@ -50,6 +51,10 @@ func (r *repositoryImpl) List(ctx context.Context) ([]Tool, error) {
 }
 
 func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
+	return r.AddOpt(ctx, BuildModeUnknown, pkgs...)
+}
+
+func (r *repositoryImpl) AddOpt(ctx context.Context, buildMode BuildMode, pkgs ...string) error {
 	r.Log.Println("add", strings.Join(pkgs, ", "))
 
 	for _, pkg := range pkgs {
@@ -71,7 +76,7 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 
 	for i, pkg := range pkgs {
 		pkg = strings.SplitN(pkg, "@", 2)[0]
-		t := Tool(pkg)
+		t := Tool{ImportPath: pkg, BuildMode: buildMode}
 		m.AddTool(t)
 		tools[i] = t
 	}
@@ -87,6 +92,9 @@ func (r *repositoryImpl) Add(ctx context.Context, pkgs ...string) error {
 	}
 
 	for _, t := range tools {
+		if !t.NeedBuild(m.DefaultBuildMode()) {
+			continue
+		}
 		_, err = r.Build(ctx, t)
 		if err != nil {
 			return errors.WithStack(err)
@@ -100,9 +108,9 @@ func (r *repositoryImpl) Build(ctx context.Context, t Tool) (string, error) {
 
 	if st, err := r.FS.Stat(binPath); err != nil {
 		r.Log.Println("build", t)
-		err := r.manager.Build(ctx, binPath, string(t), r.Verbose)
+		err := r.manager.Build(ctx, binPath, t.ImportPath, r.Verbose)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to build %s", t)
+			return "", errors.Wrapf(err, "failed to build %s", t.ImportPath)
 		}
 	} else if st.IsDir() {
 		return "", errors.Errorf("%q is a directory", t.Name())
@@ -124,6 +132,9 @@ func (r *repositoryImpl) BuildAll(ctx context.Context) error {
 
 	for _, t := range m.Tools() {
 		t := t
+		if !t.NeedBuild(m.DefaultBuildMode()) {
+			continue
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -154,12 +165,16 @@ func (r *repositoryImpl) Run(ctx context.Context, name string, args ...string) e
 		return errors.Errorf("failed to find the tool %q", name)
 	}
 
-	bin, err := r.Build(ctx, t)
-	if err != nil {
-		return errors.WithStack(err)
-	}
+	if t.NeedBuild(m.DefaultBuildMode()) {
+		bin, err := r.Build(ctx, t)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 
-	return errors.WithStack(r.executor.Exec(ctx, bin, args...))
+		return errors.WithStack(r.executor.Exec(ctx, bin, args...))
+	} else {
+		return errors.WithStack(r.manager.RunInPlace(ctx, t.ImportPath, r.Verbose, args...))
+	}
 }
 
 func (r *repositoryImpl) getManifest() (*Manifest, error) {

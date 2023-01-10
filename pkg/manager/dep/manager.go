@@ -64,6 +64,10 @@ func (m *managerImpl) Build(ctx context.Context, binPath, pkg string, verbose bo
 	return errors.WithStack(m.executor.Exec(ctx, "go", args...))
 }
 
+func (m *managerImpl) RunInPlace(ctx context.Context, pkg string, verbose bool, args ...string) error {
+	return errors.New("Package must be built before run when in Dep mode")
+}
+
 func (m *managerImpl) Sync(ctx context.Context, verbose bool) error {
 	args := []string{"ensure"}
 	if verbose {

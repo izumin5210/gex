@@ -37,6 +37,16 @@ func (m *managerImpl) Build(ctx context.Context, binPath, pkg string, verbose bo
 	return errors.WithStack(m.executor.Exec(ctx, "go", args...))
 }
 
+func (m *managerImpl) RunInPlace(ctx context.Context, pkg string, verbose bool, commandArgs ...string) error {
+	args := []string{"run"}
+	if verbose {
+		args = append(args, "-v")
+	}
+	args = append(args, pkg)
+	args = append(args, commandArgs...)
+	return errors.WithStack(m.executor.Exec(ctx, "go", args...))
+}
+
 func (m *managerImpl) Sync(ctx context.Context, verbose bool) error {
 	args := []string{"mod", "tidy"}
 	if verbose {

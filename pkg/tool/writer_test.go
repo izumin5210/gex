@@ -14,15 +14,67 @@ func TestWriter_Write(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writer := tool.NewWriter(fs)
 
-	for _, typ := range []manager.Type{manager.TypeModules, manager.TypeDep} {
-		t.Run(typ.String(), func(t *testing.T) {
-			in := tool.NewManifest([]tool.Tool{
-				"github.com/gogo/protobuf/protoc-gen-gogofast",
-				"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
-				"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger",
-				"github.com/volatiletech/sqlboiler",
-				"github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql",
-			}, typ)
+	testcases := []struct {
+		name             string
+		managerType      manager.Type
+		tools            []tool.Tool
+		defaultBuildMode tool.BuildMode
+	}{
+		{
+			name:        "dep",
+			managerType: manager.TypeDep,
+			tools: []tool.Tool{
+				{"github.com/gogo/protobuf/protoc-gen-gogofast", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger", tool.BuildModeUnknown},
+				{"github.com/volatiletech/sqlboiler", tool.BuildModeUnknown},
+				{"github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql", tool.BuildModeUnknown},
+			},
+			defaultBuildMode: tool.BuildModeBin,
+		},
+		{
+			name:        "mod",
+			managerType: manager.TypeModules,
+			tools: []tool.Tool{
+				{"github.com/gogo/protobuf/protoc-gen-gogofast", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger", tool.BuildModeBin},
+				{"github.com/volatiletech/sqlboiler", tool.BuildModeNoBin},
+				{"github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql", tool.BuildModeNoBin},
+			},
+			defaultBuildMode: tool.BuildModeBin,
+		},
+		{
+			name:        "mod default nobuild",
+			managerType: manager.TypeModules,
+			tools: []tool.Tool{
+				{"github.com/gogo/protobuf/protoc-gen-gogofast", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger", tool.BuildModeBin},
+				{"github.com/volatiletech/sqlboiler", tool.BuildModeNoBin},
+				{"github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql", tool.BuildModeNoBin},
+			},
+			defaultBuildMode: tool.BuildModeNoBin,
+		},
+		{
+			name:        "mod all nobuild",
+			managerType: manager.TypeModules,
+			tools: []tool.Tool{
+				{"github.com/gogo/protobuf/protoc-gen-gogofast", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", tool.BuildModeUnknown},
+				{"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger", tool.BuildModeUnknown},
+				{"github.com/volatiletech/sqlboiler", tool.BuildModeUnknown},
+				{"github.com/volatiletech/sqlboiler/drivers/sqlboiler-psql", tool.BuildModeUnknown},
+			},
+			defaultBuildMode: tool.BuildModeNoBin,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			in := tool.NewManifest(testcase.tools, testcase.managerType, tool.WithDefaultBuildMode(
+				testcase.defaultBuildMode,
+			))
 			path := "/home/src/awesomeapp/tools"
 
 			err := writer.Write(path, in)

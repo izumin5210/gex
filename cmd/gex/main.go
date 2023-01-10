@@ -20,6 +20,8 @@ const (
 
 var (
 	pkgsToBeAdded []string
+	flagBin       bool
+	flagNoBin     bool
 	flagBuild     bool
 	flagInit      bool
 	flagRegen     bool
@@ -31,6 +33,8 @@ var (
 func init() {
 	pflag.SetInterspersed(false)
 	pflag.StringArrayVar(&pkgsToBeAdded, "add", []string{}, "Add new tools")
+	pflag.BoolVar(&flagBin, "bin", false, "Enable build for the added tools")
+	pflag.BoolVar(&flagNoBin, "no-bin", false, "Disable build for the added tools")
 	pflag.BoolVar(&flagInit, "init", false, "Initialize tools manifest")
 	pflag.BoolVar(&flagBuild, "build", false, "Build all tools")
 	pflag.BoolVar(&flagRegen, "regen", false, "Regenerate manifest")
@@ -68,7 +72,13 @@ func run() error {
 
 	switch {
 	case len(pkgsToBeAdded) > 0:
-		err = toolRepo.Add(ctx, pkgsToBeAdded...)
+		buildMode := tool.BuildModeUnknown
+		if flagBin {
+			buildMode = tool.BuildModeBin
+		} else if flagNoBin {
+			buildMode = tool.BuildModeNoBin
+		}
+		err = toolRepo.AddOpt(ctx, buildMode, pkgsToBeAdded...)
 	case flagVersion:
 		fmt.Fprintf(os.Stdout, "%s %s\n", cliName, gex.Version)
 	case flagHelp:
